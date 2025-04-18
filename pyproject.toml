@@ -1,0 +1,28 @@
+[project]
+name = "json-generator-mts"
+version = "0.1.0"
+description = "Project for generating json-schema in MTS hackathon"
+authors = [
+    {name = "Timur Komolov",email = "komolov.timurka@mail.ru"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi (>=0.115.12,<0.116.0)",
+]
+
+[tool.poetry]
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.1.0"
+black = "^25.1.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry-auto-export]
+output = "requirements.txt"
+without_hashes = true
+without = ["dev"]
