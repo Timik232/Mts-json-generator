@@ -1,5 +1,14 @@
 from typing import List
 
+import langchain
+import langchain.document_loaders
+import lancedb
+from langchain_community.vectorstores import LanceDB
+from langchain_core.messages import HumanMessage, SystemMessage
+import langchain.chains
+import langchain.prompts
+import sys
+import logging
 
 class SimpleRetrievalAgent:
     """
@@ -11,7 +20,20 @@ class SimpleRetrievalAgent:
         self.name = name
         self.vector_store = vector_store
         self.top_k = top_k
+        if self.vector_store:
+            db = lancedb.connect(self.vector_store)
+            table = db.open_table("vector_index")
+            self.embeddings = langchain.embeddings.HuggingFaceEmbeddings(
+                model_name="distiluse-base-multilingual-cased-v1"
+            )
+            self.vec_store = LanceDB(table, self.embeddings)
+        logging.basicConfig(level=logging.INFO, filename="generation_log.log", filemode="w", encoding='utf-8')
 
     def retrieve(self, query: str) -> List[str]:
-        # Возвращаем список текстов документов
-        return self.vector_store.search(query, top_k=self.top_k)
+        search_results = self.vec_store.similarity_search(query, k=self.top_k)
+        results = [doc.page_content for doc in search_results]
+        if search_results:
+            min_distance = search_results[0].metadata.get("_distance", 0)
+            logging.info(f"Closest document distance: {min_distance}")
+        return results
+
