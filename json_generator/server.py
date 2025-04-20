@@ -55,7 +55,7 @@ async def chat_endpoint(req: ChatRequest):
 @app.post("/clear")
 async def clear(session_id: SessionID):
     try:
-        res = await chat_manager.clear_messages(session_id.session_id)
+        res = chat_manager.clear_messages(session_id.session_id)
         if res:
             return JSONResponse(
                 content={"detail": "Messages cleared successfully"}, status_code=200

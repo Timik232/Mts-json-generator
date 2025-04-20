@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Annotated, Any, Dict
 
-from autogen import Cache, ConversableAgent, GroupChat, GroupChatManager
+from autogen import Cache, ConversableAgent
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
@@ -92,10 +92,6 @@ def retrieve_documents(
     return "\n".join(docs)
 
 
-group_chat = GroupChat(
-    agents=[user_proxy, clarification_agent], messages=[], max_round=4
-)
-manager = GroupChatManager(groupchat=group_chat, llm_config=llm_config)
 logging.info("Агенты schema_generator и clarifier готовы")
 
 
