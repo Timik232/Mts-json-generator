@@ -1,0 +1,3246 @@
+{
+  "wf_definition": {
+    "description": "Описание wf/definition",
+    "parameters": [
+      {
+        "name": "type",
+        "type": "String255",
+        "description": "Тип WF. Чаще всего complex. Составной тип примитива, используется для создания БП из нескольких действий. Выполняется и обрабатывается последовательность действий (activity). Также может быть: await_for_message, rest_call, db_call, send_to_rabbitmq, send_to_sap, transform.",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "String255",
+        "description": "Имя WF",
+        "required": true
+      },
+      {
+        "name": "tenantId",
+        "type": "String255",
+        "description": "id системы которая использует WF",
+        "required": false
+      },
+      {
+        "name": "version",
+        "type": "Int",
+        "description": "Версия WF",
+        "required": false
+      },
+      {
+        "name": "description",
+        "type": "String4000",
+        "description": "Описание WF",
+        "required": false
+      },
+      {
+        "name": "compiled",
+        "type": "Составной Compiled",
+        "description": "Описание составного типа WF",
+        "required": true,
+        "required_cond": "обязательное, если примитив составной (type = 'complex')"
+      },
+      {
+        "name": "details",
+        "type": "Составной DefinitionDetails",
+        "description": "Для типа БП complex - описание ожидаемых параметров на вход БП. Для других типов БП - описание деталей БП",
+        "required": true,
+        "required_cond": "обязательное, если примитив простой (type != 'complex')"
+      },
+      {
+        "name": "flowEditorConfig",
+        "type": "Составной",
+        "description": "Данные для UI, на исполнение схемы они не влияют",
+        "required": false
+      }
+    ],
+    "DefinitionDetails": {
+      "description": "Составной DefinitionDetails",
+      "parameters": [
+        {
+          "name": "inputValidateSchema",
+          "type": "JsonObject",
+          "description": "Стандартная json schema с описанием механизма проверки входящих переменных. С помощью этого параметра можно задать параметры, ожидаемые на старт БП. Если старт БП не будет соответствовать параметрам, то экземпляр БП упадет с ошибкой 400.",
+          "required": false
+        },
+        {
+          "name": "outputValidateSchema",
+          "type": "JsonObject",
+          "description": "Стандартная json schema с описанием механизма проверки исходящих переменных",
+          "required": false
+        },
+        {
+          "name": "starters",
+          "type": "Массив из составных starters",
+          "description": "Описание параметров старта",
+          "required": true
+        },
+        {
+          "name": "sendToKafkaConfig",
+          "type": "Составной sendToKafkaConfig",
+          "description": "Описание деталей вызова",
+          "required": true,
+          "required_cond": "обязательное, если FlowDefinition.type = 'send_to_kafka'"
+        },
+        {
+          "name": "sendToS3Config",
+          "type": "Составной sendToS3Config",
+          "description": "Описание деталей вызова",
+          "required": true,
+          "required_cond": "обязательное, если FlowDefinition.type = 'send_to_s3'"
+        },
+        {
+          "name": "restCallConfig",
+          "type": "Составной restCallConfig",
+          "description": "Описание вызова REST",
+          "required": true,
+          "required_cond": "обязательное, если FlowDefinition.type = 'rest_call'"
+        },
+        {
+          "name": "xsltTransformConfig",
+          "type": "Составной xsltTransformConfig",
+          "description": "Описание xslt-трансформации",
+          "required": true,
+          "required_cond": "обязательное, если FlowDefinition.type = 'xslt_transform'"
+        },
+        {
+          "name": "databaseCallConfig",
+          "type": "Составной databaseCallConfig",
+          "description": "Описание вызова БД (select или function)",
+          "required": true,
+          "required_cond": "обязательное, если FlowDefinition.type = 'db_call'"
+        },
+        {
+          "name": "sendToRabbitmqConfig",
+          "type": "Составной sendToRabbitmqConfig",
+          "description": "Описание отправки сообщения в Rabbitmq",
+          "required": true,
+          "required_cond": "обязательное, если FlowDefinition.type = 'send_to_rabbitmq'"
+        },
+        {
+          "name": "awaitForMessageConfig",
+          "type": "Составной awaitForMessageConfig",
+          "description": "Описание ожидаемого сообщения от внешней системы",
+          "required": true,
+          "required_cond": "обязательное, если FlowDefinition.type = 'await_for_message'"
+        },
+        {
+          "name": "sendToSapConfig",
+          "type": "Составной sendToSapConfig",
+          "description": "Описание параметров отправки idoc в sap",
+          "required": true,
+          "required_cond": "обязательное, если FlowDefinition.type = 'send_to_sap'"
+        }
+      ]
+    },
+    "starters": {
+      "description": "Составной starters",
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "Тип старта: kafka_consumer, sap_inbound, rest_call, scheduler, rabbitmq_consumer, mail_consumer. Если не указан стартер, то по умолчанию присваивается rest_call.",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Имя стартера",
+          "required": true,
+          "required_cond": "обязательное для всех типов старта кроме rest_call"
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание стартера",
+          "required": false
+        },
+        {
+          "name": "rabbitmqConsumer",
+          "type": "Составной rabbitmqConsumer",
+          "description": "Описание деталей стартера подключения rabbitmq",
+          "required": true,
+          "required_cond": "обязательное, если стартер rabbitmq"
+        },
+        {
+          "name": "kafkaConsumer",
+          "type": "Составной kafkaConsumer",
+          "description": "Описание деталей подключения стартера kafka",
+          "required": true,
+          "required_cond": "обязательное, если стартер kafka"
+        },
+        {
+          "name": "sapInbound",
+          "type": "Составной sapInbound",
+          "description": "Описание деталей подключения стартера SAP",
+          "required": true,
+          "required_cond": "обязательное, если стартер SAP"
+        },
+        {
+          "name": "shedulerStarter",
+          "type": "Составной shedulerStarter",
+          "description": "Описание деталей работы стартера по расписанию",
+          "required": true,
+          "required_cond": "обязательное, если стартер по расписанию"
+        }
+      ]
+    },
+    "Compiled": {
+      "description": "Составной Compiled",
+      "parameters": [
+        {
+          "name": "start",
+          "type": "String255",
+          "description": "Указывается activity id, с которого начинается WF (точка входа start)",
+          "required": true,
+          "required_cond": "обязательное, если примитив составной (type = 'complex')"
+        },
+        {
+          "name": "activities",
+          "type": "Составной Activity",
+          "description": "Массив с описанием всех Activity данного WF",
+          "required": true,
+          "required_cond": "обязательное, если примитив составной (type = 'complex')"
+        },
+        {
+          "name": "outputTemplate",
+          "type": "JsonObject",
+          "description": "Фильтр всех данных запуска по завершению процесса. Если старт схемы будет производится с помощью синхронного REST-запроса и в ответ необходимо получить только определенные параметры, для более удобной их обработки, то необходимо указать необходимые для фильтрации параметры.",
+          "required": false
+        }
+      ]
+    }
+  },
+  "starter_rest": {
+    "description": "Стартер rest",
+    "starters": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "rest_call. Важно! Если далее в схеме планируется использовать отдельные данные, которые пришли на старте, то обязательно необходимо указать details.inputValidateSchema, в которой они будут объявлены. Если планируется просто передать данные старта без изменений, можно использовать стандартную переменную jp{wf.initVariables}",
+          "required": true
+        }
+      ]
+    }
+  },
+  "starter_rabbitmq": {
+    "description": "Стартер rabbitmq",
+    "starters": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "rabbitmq_consumer",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Имя стартера",
+          "required": true,
+          "required_cond": "обязательное для всех типов старта кроме rest_call"
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание стартера",
+          "required": false
+        },
+        {
+          "name": "rabbitmqConsumer",
+          "type": "Составной rabbitmqConsumer",
+          "description": "Описание деталей стартера подключения rabbitmq",
+          "required": true,
+          "required_cond": "обязательное, если стартер rabbitmq"
+        }
+      ]
+    },
+    "rabbitmqConsumer": {
+      "parameters": [
+        {
+          "name": "queue",
+          "type": "String255",
+          "description": "Наименование очереди",
+          "required": true,
+          "required_cond": "обязательное, если стартер rabbitmq"
+        },
+        {
+          "name": "connectionDef",
+          "type": "Составной connectionDef",
+          "description": "Параметры подключения",
+          "required": true,
+          "required_cond": "обязательное, если стартер rabbitmq"
+        },
+        {
+          "name": "payloadValidateSchema",
+          "type": "JsonObject",
+          "description": "Схема валидации сообщения. Стандартная json schema с описанием механизма проверки входящих переменных. Важно! Если какие-то параметры не будут соответствовать обязательности, указанной в payloadValidateSchema, то по вычитанному сообщению старта схемы не будет.",
+          "required": false
+        },
+        {
+          "name": "outputTemplate",
+          "type": "JsonObject",
+          "description": "Объявление переменных на основе полученных в сообщении данных.",
+          "required": false
+        }
+      ]
+    },
+    "connectionDef": {
+      "parameters": [
+        {
+          "name": "userName",
+          "type": "String255",
+          "description": "Имя пользователя",
+          "required": true
+        },
+        {
+          "name": "userPass",
+          "type": "String255",
+          "description": "Пароль пользователя",
+          "required": true
+        },
+        {
+          "name": "addresses",
+          "type": "Массив адресов",
+          "description": "Адрес подключения и порт",
+          "required": true
+        },
+        {
+          "name": "virtualHost",
+          "type": "String255",
+          "description": "Виртуальный хост",
+          "required": true
+        }
+      ]
+    }
+  },
+  "starter_kafkaConsumer": {
+    "description": "Стартер kafkaConsumer",
+    "starters": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "kafka_consumer",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Имя стартера",
+          "required": true,
+          "required_cond": "обязательное для всех типов старта кроме rest_call"
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание стартера",
+          "required": false
+        },
+        {
+          "name": "kafkaConsumer",
+          "type": "Составной kafkaConsumer",
+          "description": "Описание деталей стартера подключения kafka",
+          "required": true,
+          "required_cond": "обязательное, если стартер kafka_consumer"
+        }
+      ]
+    },
+    "kafkaConsumer": {
+      "parameters": [
+        {
+          "name": "topic",
+          "type": "String255",
+          "description": "Наименование топика",
+          "required": true,
+          "required_cond": "обязательное, если стартер kafka_consumer"
+        },
+        {
+          "name": "connectionDef",
+          "type": "Составной connectionDef",
+          "description": "Параметры подключения",
+          "required": true,
+          "required_cond": "обязательное, если стартер kafka_consumer"
+        },
+        {
+          "name": "payloadValidateSchema",
+          "type": "JsonObject",
+          "description": "Схема валидации сообщения. Стандартная json schema с описанием механизма проверки входящих переменных. Важно! Если какие-то параметры не будут соответствовать обязательности, указанной в payloadValidateSchema, то по вычитанному сообщению старта схемы не будет.",
+          "required": false
+        },
+        {
+          "name": "keyValidateSchema",
+          "type": "JsonObject",
+          "description": "Схема валидации ключа. Стандартная json schema с описанием механизма проверки входящих переменных. Важно! Если какие-то параметры не будут соответствовать обязательности, указанной в keyValidateSchema, то по вычитанному сообщению старта схемы не будет.",
+          "required": false
+        },
+        {
+          "name": "headersValidateSchema",
+          "type": "JsonObject",
+          "description": "Схема валидации заголовков. Стандартная json schema с описанием механизма проверки входящих переменных. Важно! Если какие-то параметры не будут соответствовать обязательности, указанной в headersValidateSchema, то по вычитанному сообщению старта схемы не будет.",
+          "required": false
+        },
+        {
+          "name": "outputTemplate",
+          "type": "JsonObject",
+          "description": "Объявление переменных на основе полученных в сообщении данных.",
+          "required": false
+        }
+      ]
+    },
+    "connectionDef": {
+      "parameters": [
+        {
+          "name": "bootstrapServers",
+          "type": "String255",
+          "description": "Адрес подключения",
+          "required": true
+        },
+        {
+          "name": "authDef",
+          "type": "Составной authDef",
+          "description": "Параметры подключения",
+          "required": true
+        }
+      ]
+    },
+    "authDef": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "Тип авторизации: SASL, TLS. Если нет авторизации, то authDef не нужно отправлять",
+          "required": true,
+          "required_cond": "обязательный, если есть авторизация"
+        },
+        {
+          "name": "sasl",
+          "type": "Составной sasl",
+          "description": "Подключение по sasl",
+          "required": true,
+          "required_cond": "обязательный, если авторизация sasl"
+        },
+        {
+          "name": "tls",
+          "type": "Составной tls",
+          "description": "Подключение по tls",
+          "required": true,
+          "required_cond": "обязательный, если авторизация tls"
+        }
+      ]
+    },
+    "sasl": {
+      "parameters": [
+        {
+          "name": "protocol",
+          "type": "String255",
+          "description": "Протокол подключения: SASL_SSL, SASL_PLAINTEXT",
+          "required": true
+        },
+        {
+          "name": "mechanism",
+          "type": "String255",
+          "description": "Механизм подключения: OAUTHBEARER (только для SASL_PLAINTEXT), SCRAM-SHA-512 (для SASL_SSL и SASL_PLAINTEXT)",
+          "required": true
+        },
+        {
+          "name": "username",
+          "type": "String255",
+          "description": "Логин",
+          "required": true
+        },
+        {
+          "name": "password",
+          "type": "String255",
+          "description": "Пароль",
+          "required": true
+        },
+        {
+          "name": "sslDef",
+          "type": "Составной sslDef",
+          "description": "Сертификаты",
+          "required": true,
+          "required_cond": "обязательный для SCRAM-SHA-512"
+        },
+        {
+          "name": "tokenUrl",
+          "type": "String255",
+          "description": "Url для проверки пользователя",
+          "required": true,
+          "required_cond": "обязательный для OAUTHBEARER"
+        }
+      ]
+    },
+    "sslDef": {
+      "parameters": [
+        {
+          "name": "trustStoreType",
+          "type": "String255",
+          "description": "Тип сертификата: PEM",
+          "required": false
+        },
+        {
+          "name": "trustStoreCertificates",
+          "type": "String",
+          "description": "Тело сертификатов. Начинается с '-----BEGIN CERTIFICATE-----\r\n' и заканчивается '\r\n-----END CERTIFICATE-----\r\n'",
+          "required": false
+        }
+      ]
+    },
+    "tls": {
+      "parameters": [
+        {
+          "name": "keyStoreCertificates",
+          "type": "String",
+          "description": "Публичный ключ клиента для аутентификации в формате PEM или base64(PEM)",
+          "required": true,
+          "required_cond": "обязательный для TLS"
+        },
+        {
+          "name": "keyStoreKey",
+          "type": "String",
+          "description": "Приватный ключ клиента в формате PEM или base64(PEM)",
+          "required": true,
+          "required_cond": "обязательный для TLS"
+        },
+        {
+          "name": "trustStoreCertificates",
+          "type": "String",
+          "description": "Корневой сертификат в формате PEM или base64(PEM)",
+          "required": true,
+          "required_cond": "обязательный для TLS"
+        },
+        {
+          "name": "trustStoreType",
+          "type": "String255",
+          "description": "Тип сертификата: PEM",
+          "required": true,
+          "required_cond": "обязательный для TLS"
+        }
+      ]
+    }
+  },
+  "starter_sapInbound": {
+    "description": "Стартер sapInbound",
+    "starters": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "sap_inbound",
+          "required": true
+        },
+        {
+          "name": "inboundDef",
+          "type": "Составной inboundDef",
+          "description": "Описание деталей стартера подключения inboundDef",
+          "required": true,
+          "required_cond": "обязательное, если стартер sap_inbound"
+        }
+      ]
+    },
+    "inboundDef": {
+      "parameters": [
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Имя стартера",
+          "required": true,
+          "required_cond": "обязательное для всех типов старта кроме rest_call"
+        },
+        {
+          "name": "connectionDef",
+          "type": "Составной connectionDef",
+          "description": "Параметры подключения",
+          "required": true,
+          "required_cond": "обязательное, если стартер sap_inbound"
+        },
+        {
+        "name": "props",
+          "type": "Составной props",
+          "description": "Дополнительные параметры",
+          "required": true,
+          "required_cond": "обязательное, если стартер sap_inbound"
+        }
+      ]
+    },
+    "connectionDef": {
+      "parameters": [
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Имя стартера",
+          "required": true,
+          "required_cond": "обязательное для всех типов старта кроме rest_call"
+        },
+        {
+          "name": "props",
+          "type": "Составной props",
+          "description": "Параметры подключения",
+          "required": true,
+          "required_cond": "обязательное, если стартер sap_inbound"
+        }
+      ]
+    },
+    "props_connectionDef": {
+      "parameters": [
+        {
+          "name": "jco.client.lang",
+          "type": "String255",
+          "description": "Язык клиента",
+          "required": true
+        },
+        {
+          "name": "jco.client.passwd",
+          "type": "String255",
+          "description": "Пароль",
+          "required": true
+        },
+        {
+          "name": "jco.client.user",
+          "type": "String255",
+          "description": "Логин",
+          "required": true
+        },
+        {
+          "name": "jco.client.sysnr",
+          "type": "Int",
+          "description": "Номер SAP-системы",
+          "required": true
+        },
+        {
+          "name": "jco.destination.pool_capacity",
+          "type": "Int",
+          "description": "Максимальное количество подключений, которые могут находиться в пуле подключений для destination",
+          "required": true
+        },
+        {
+          "name": "jco.destination.peak_limit",
+          "type": "Int",
+          "description": "Максимальное количество одновременных подключений для destination",
+          "required": true
+        },
+        {
+          "name": "jco.client.client",
+          "type": "Int",
+          "description": "Номер клиента в SAP-системе",
+          "required": true
+        },
+        {
+          "name": "jco.client.ashost",
+          "type": "String255",
+          "description": "Хост",
+          "required": true
+        }
+      ]
+    },
+    "props_inboundDef": {
+      "parameters": [
+        {
+          "name": "jco.server.gwhost",
+          "type": "String255",
+          "description": "gwhost",
+          "required": true
+        },
+        {
+          "name": "jco.server.progid",
+          "type": "String255",
+          "description": "progid",
+          "required": true
+        },
+        {
+          "name": "jco.server.gwserv",
+          "type": "String255",
+          "description": "gwserv",
+          "required": true
+        },
+        {
+          "name": "jco.server.connection_count",
+          "type": "Int",
+          "description": "Количество подключений",
+          "required": true
+        }
+      ]
+    }
+  },
+  "starter_scheduler": {
+    "description": "Стартер scheduler",
+    "starters": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "scheduler",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Имя стартера",
+          "required": true,
+          "required_cond": "обязательное для всех типов старта кроме rest_call"
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание стартера",
+          "required": false
+        },
+        {
+          "name": "scheduler",
+          "type": "Составной scheduler",
+          "description": "Описание деталей стартера по расписанию",
+          "required": true,
+          "required_cond": "обязательное, если стартер scheduler"
+        }
+      ]
+    },
+    "scheduler": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "cron",
+          "required": true,
+          "required_cond": "обязательное, если стартер scheduler"
+        },
+        {
+          "name": "cron",
+          "type": "Составной cron",
+          "description": "Описание расписания",
+          "required": true,
+          "required_cond": "обязательное, если стартер scheduler"
+        },
+        {
+          "name": "startDateTime",
+          "type": "Date",
+          "description": "Дата начала работы стартера",
+          "required": true
+        },
+        {
+          "name": "endDateTime",
+          "type": "Date",
+          "description": "Дата окончания работы стартера",
+          "required": false
+        }
+      ]
+    },
+    "cron": {
+      "parameters": [
+        {
+          "name": "dayOfWeek",
+          "type": "String255",
+          "description": "День недели",
+          "required": true,
+          "required_cond": "обязательно заполнение хотя бы одного параметра cron"
+        },
+        {
+          "name": "month",
+          "type": "String255",
+          "description": "Количество месяцев, через которое повторять запуск",
+          "required": true,
+          "required_cond": "обязратно заполнение хотя бы одного параметра cron"
+        },
+        {
+          "name": "dayOfMonth",
+          "type": "String255",
+          "description": "День месяца",
+          "required": true,
+          "required_cond": "обязательно заполнение хотя бы одного параметра cron"
+        },
+        {
+          "name": "hour",
+          "type": "String255",
+          "description": "Часы",
+          "required": true,
+          "required_cond": "обязательно заполнение хотя бы одного параметра cron"
+        },
+        {
+          "name": "minute",
+          "type": "String255",
+          "description": "Минуты",
+          "required": true,
+          "required_cond": "обязательно заполнение хотя бы одного параметра cron"
+        }
+      ]
+    }
+  },
+  "starter_mail_consumer": {
+    "description": "Стартер mail_consumer",
+    "starters": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "mail_consumer",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Имя стартера",
+          "required": true,
+          "required_cond": "обязательное для всех типов старта кроме rest_call"
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание стартера",
+          "required": false
+        },
+        {
+          "name": "mailConsumer",
+          "type": "Составной mailConsumer",
+          "description": "Описание деталей стартера",
+          "required": true,
+          "required_cond": "обязательное, если стартер mail_consumer"
+        }
+      ]
+    },
+    "mailConsumer": {
+      "parameters": [
+        {
+          "name": "connectionDef",
+          "type": "Составной connectionDef",
+          "description": "Параметры подключения",
+          "required": true,
+          "required_cond": "обязательное, если стартер mail_consumer"
+        },
+        {
+          "name": "mailFilter",
+          "type": "Составной mailFilter",
+          "description": "Фильтры для писем",
+          "required": true
+        }
+      ]
+    },
+    "connectionDef": {
+      "parameters": [
+        {
+          "name": "protocol",
+          "type": "String255",
+          "description": "imap",
+          "required": true,
+          "required_cond": "обязательно для mail_consumer"
+        },
+        {
+          "name": "host",
+          "type": "String255",
+          "description": "Хост подключения",
+          "required": true,
+          "required_cond": "обязательно для mail_consumer"
+        },
+        {
+          "name": "port",
+          "type": "String255",
+          "description": "Порт",
+          "required": true,
+          "required_cond": "обязательно для mail_consumer"
+        },
+        {
+          "name": "mailAuth",
+          "type": "Составной mailAuth",
+          "description": "Параметры авторизации",
+          "required": true,
+          "required_cond": "обязательно для mail_consumer"
+        }
+      ]
+    },
+    "mailAuth": {
+      "parameters": [
+        {
+          "name": "username",
+          "type": "String255",
+          "description": "Почта",
+          "required": true,
+          "required_cond": "обязательно для mail_consumer"
+        },
+        {
+          "name": "password",
+          "type": "String255",
+          "description": "Пароль",
+          "required": true,
+          "required_cond": "обязательно для mail_consumer"
+        }
+      ]
+    },
+    "mailFilter": {
+      "parameters": [
+        {
+          "name": "senders",
+          "type": "Массив senders",
+          "description": "Почта отправителя письма",
+          "required": false
+        },
+        {
+          "name": "subjects",
+          "type": "Массив subjects",
+          "description": "Тема письма. Полное совпадение",
+          "required": false
+        },
+        {
+          "name": "startMailDateTime",
+          "type": "Date",
+          "description": "Дата, с которой необходимо начать вычитывать непрочитанные сообщения. Если параметр не указан, то будут вычитываться все непрочитанные письма.",
+          "required": false
+        }
+      ]
+    }
+  },
+  "Activity": {
+    "description": "Составной Activity",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "String255",
+        "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String255",
+        "description": "Описание шага",
+        "required": false
+      },
+      {
+        "name": "transition",
+        "type": "String255",
+        "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+        "required": true
+      },
+      {
+        "name": "type",
+        "type": "String255",
+        "description": "Тип activity, может быть следующих типов: workflow_call, inject, switch, timer, transform, parallel",
+        "required": true
+      },
+      {
+        "name": "workflowCall",
+        "type": "Составной WorkflowCall",
+        "description": "Подробное описание параметров activity с типом workflow_call",
+        "required": true,
+        "required_cond": "обязательное, если type = \"workflow_call\" или \"inject\""
+      },
+      {
+        "name": "injectData",
+        "type": "JsonObject",
+        "description": "Описание вставляемых данных в формате Json",
+        "required": true,
+        "required_cond": "обязательное, если type = \"inject\""
+      },
+      {
+        "name": "outputFilter",
+        "type": "String255",
+        "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных",
+        "required": false
+      },
+      {
+        "name": "dataConditions",
+        "type": "Составной dataConditions",
+        "description": "Описание проверяемых условий и действий при успешном их выполнении",
+        "required": true,
+        "required_cond": "обязательное, если type = \"switch\""
+      },
+      {
+        "name": "defaultTransition",
+        "type": "Составной defaultCondition",
+        "description": "Описание поведения WF, если результат вызова всех condition = false",
+        "required": true,
+        "required_cond": "обязательное, если type = \"switch\""
+      },
+      {
+        "name": "branches",
+        "type": "Массив ИД activity",
+        "description": "Список id activity данного WF, которые будут выполняться параллельно",
+        "required": true,
+        "required_cond": "обязательное, если type = \"parallel\""
+      },
+      {
+        "name": "completionType",
+        "type": "String255",
+        "description": "Тип завершения параллельного activity, может быть: anyOf, allOf",
+        "required": true,
+        "required_cond": "обязательное, если type = \"parallel\""
+      },
+      {
+        "name": "timerDuration",
+        "type": "String256 ISO 8601 duration format",
+        "description": "Таймер, через какое время произойдет переход к следующему по схеме activity",
+        "required": true,
+        "required_cond": "обязательное, если type = \"timer\""
+      },
+      {
+        "name": "transform",
+        "type": "Составной transform",
+        "description": "Параметры трансформации",
+        "required": true,
+        "required_cond": "обязательное, если type = \"transform\""
+      }
+    ]
+  },
+  "WorkflowCall": {
+    "description": "Составной WorkflowCall",
+    "parameters": [
+      {
+        "name": "args",
+        "type": "JsonObject",
+        "description": "Входные параметры для примитива",
+        "required": false
+      },
+      {
+        "name": "workflowRef",
+        "type": "Составной Ref",
+        "description": "Ссылка на сохраненный ранее шаблон WF. Важно! businessKey подпроцесса будет сгенерирован автоматически",
+        "required": true,
+        "required_cond": "обязательное, если нет workflowDef"
+      },
+      {
+        "name": "workflowDef",
+        "type": "Составной SimpleWorkflowDefinition",
+        "description": "Описание вызываемого подпроцесса",
+        "required": true,
+        "required_cond": "обязательное, если нет workflowRef"
+      },
+      {
+        "name": "retryConfig",
+        "type": "Составной retryConfig",
+        "description": "Описание политики retry. Для всех activity",
+        "required": false
+      },
+      {
+        "name": "failActivityResult",
+        "type": "Составной failActivityResult",
+        "description": "Переход к следующему шагу при неуспешном завершении при завершении retry. Для всех activity",
+        "required": false
+      }
+    ]
+  },
+  "retryConfig": {
+    "description": "Составной retryConfig",
+    "parameters": [
+      {
+        "name": "initialInterval",
+        "type": "String256 ISO 8601 duration format",
+        "description": "Интервал времени до первого повтора, по умолчанию 1 секунда",
+        "required": false
+      },
+      {
+        "name": "maxInterval",
+        "type": "String256 ISO 8601 duration format",
+        "description": "Максимальный интервал времени между попытками (должен быть больше чем initialInterval), по умолчанию не ограниченный",
+        "required": false
+      },
+      {
+        "name": "maxAttempts",
+        "type": "Int",
+        "description": "Максимальное количество повторов",
+        "required": false
+      },
+      {
+        "name": "backoffCoefficient",
+        "type": "float",
+        "description": "Коэффициент увеличения интервала после каждого повтора (минимальное значение 1.0), по умолчанию 2.0",
+        "required": false
+      }
+    ]
+  },
+  "failActivityResult": {
+    "description": "Составной failActivityResult",
+    "parameters": [
+      {
+        "name": "retryStates",
+        "type": "Массив статусов",
+        "description": "Список статусов для перехода к следующему шагу при неуспешном завершении retry",
+        "required": false
+      },
+      {
+        "name": "variables",
+        "type": "JsonString",
+        "description": "Объявление переменных при выходе из retry для перехода к следующему шагу. Важно! Если в данной activity указаны outputFilter, то все они должны быть перечислены в variables",
+        "required": true,
+        "required_cond": "обязательный, если у пользователя заданы outputFilter в данной activity"
+      }
+    ]
+  },
+  "Ref": {
+    "description": "Составной Ref",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "String-UUID",
+        "description": "id шаблона БП из справочника",
+        "required": true,
+        "required_cond": "обязательный, если нет name"
+      },
+      {
+        "name": "name",
+        "type": "String255",
+        "description": "Наименование шаблона",
+        "required": true,
+        "required_cond": "обязательный, если нет id"
+      },
+      {
+        "name": "version",
+        "type": "Int",
+        "description": "Версия шаблона",
+        "required": false
+      },
+      {
+        "name": "tenantId",
+        "type": "String255",
+        "description": "id системы которая использует шаблон",
+        "required": false
+      }
+    ]
+  },
+  "await_for_message": {
+    "description": "Примитив await_for_message",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "args",
+          "type": "JsonObject",
+          "description": "Аргументы на вход activity",
+          "required": false
+        },
+        {
+          "name": "workflowDef",
+          "type": "Составной SimpleWorkflowDefinition",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательное, если нет workflowRef"
+        }
+      ]
+    },
+    "SimpleWorkflowDefinition": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "await_for_message",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Детали подпроцесса",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "awaitForMessageConfig",
+          "type": "Составной awaitForMessageConfig",
+          "description": "Описание ожидаемого сообщения от внешней системы.",
+          "required": true
+        }
+      ]
+    },
+    "awaitForMessageConfig": {
+      "parameters": [
+        {
+          "name": "MessageName",
+          "type": "String255",
+          "description": "Наименование сообщения, которое отправит внешняя система. Важно! Параметры messageName в вызове и в описании activity должны быть равны",
+          "required": true
+        }
+      ]
+    }
+  },
+  "rest_call": {
+    "description": "Примитив rest_call",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        },
+        {
+          "name": "outputFilter",
+          "type": "String255",
+          "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных.",
+          "required": false
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "args",
+          "type": "JsonObject",
+          "description": "Аргументы на вход activity",
+          "required": false
+        },
+        {
+          "name": "retryConfig",
+          "type": "Составной retryConfig",
+          "description": "Описание политики retry",
+          "required": false
+        },
+        {
+          "name": "workflowDef",
+          "type": "Составной SimpleWorkflowDefinition",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательный, если нет workflowRef"
+        }
+      ]
+    },
+    "retryConfig": {
+      "parameters": [
+        {
+          "name": "initialInterval",
+          "type": "String256 ISO 8601 duration format",
+          "description": "Интервал времени до первого повтора, по умолчанию 1 секунда",
+          "required": false
+        },
+        {
+          "name": "maxInterval",
+          "type": "String256 ISO 8601 duration format",
+          "description": "Максимальный интервал времени между попытками, по умолчанию не ограниченный",
+          "required": false
+        },
+        {
+          "name": "maxAttempts",
+          "type": "Int",
+          "description": "Максимальное количество повторов",
+          "required": false
+        },
+        {
+          "name": "backoffCoefficient",
+          "type": "float",
+          "description": "Коэффициент увеличения интервала после каждого повтора, по умолчанию 2.0",
+          "required": false
+        }
+      ]
+    },
+    "SimpleWorkflowDefinition": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "rest_call",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "inputValidateSchema",
+          "type": "JsonObject",
+          "description": "Стандартная json schema с описанием механизма проверки входящих переменных",
+          "required": false
+        },
+        {
+          "name": "outputValidateSchema",
+          "type": "JsonObject",
+          "description": "Стандартная json schema с описанием механизма проверки исходящих переменных",
+          "required": false
+        },
+        {
+          "name": "restCallConfig",
+          "type": "Составной restCallConfig",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "restCallConfig": {
+      "parameters": [
+        {
+          "name": "resultHandlers",
+          "type": "Список значений составных predicate",
+          "description": "Описание условий успешного вызова",
+          "required": false
+        },
+        {
+          "name": "restCallTemplateRef",
+          "type": "Составной restCallTemplateRef",
+          "description": "Описание на вызов шаблона rest запроса из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет restCallTemplateDef"
+        },
+        {
+          "name": "restCallTemplateDef",
+          "type": "Составной restCallTemplateDef",
+          "description": "Параметры вызова rest запроса",
+          "required": true,
+          "required_cond": "обязательный, если нет restCallTemplateRef"
+        }
+      ]
+    },
+    "predicate": {
+      "parameters": [
+        {
+          "name": "respCode",
+          "type": "Int",
+          "description": "Код ответа",
+          "required": true,
+          "required_cond": "обязательный, если нет respCodeInterval"
+        },
+        {
+          "name": "respCodes",
+          "type": "Массив значений respCode",
+          "description": "Список кодов ответов",
+          "required": true,
+          "required_cond": "обязательный, если нет respCodeInterval или respCode"
+        },
+        {
+          "name": "respCodeInterval",
+          "type": "Составной respCodeInterval",
+          "description": "Интервал ответов",
+          "required": true,
+          "required_cond": "обязательный, если нет respCode"
+        },
+        {
+          "name": "respValueAnyOf",
+          "type": "Массив объектов pathValueValidation",
+          "description": "Описание значений переменных",
+          "required": false
+        }
+      ]
+    },
+    "respCodeInterval": {
+      "parameters": [
+        {
+          "name": "from",
+          "type": "Int",
+          "description": "Значение кода ответа от которого начинается интервал",
+          "required": false
+        },
+        {
+          "name": "to",
+          "type": "Int",
+          "description": "Значение кода ответа на котором заканчивается интервал",
+          "required": false
+        }
+      ]
+    },
+    "PathValueValidation": {
+      "parameters": [
+        {
+          "name": "jsonPath",
+          "type": "String255",
+          "description": "Путь к переменной",
+          "required": true
+        },
+        {
+          "name": "values",
+          "type": "Массив (String255 или boolean или int или double)",
+          "description": "Значения переменной",
+          "required": true
+        },
+        {
+          "name": "and",
+          "type": "Составной pathValueValidation",
+          "description": "Описание значений еще одной переменной.",
+          "required": false
+        }
+      ]
+    },
+    "restCallTemplateRef": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String-UUID",
+          "description": "id шаблона rest запроса из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет name"
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Наименование шаблона",
+          "required": true,
+          "required_cond": "обязательный, если нет id"
+        },
+        {
+          "name": "version",
+          "type": "Int",
+          "description": "Версия шаблона",
+          "required": false
+        },
+        {
+          "name": "tenantId",
+          "type": "String255",
+          "description": "id системы которая использует шаблон",
+          "required": false
+        }
+      ]
+    },
+    "restCallTemplateDef": {
+      "parameters": [
+        {
+          "name": "method",
+          "type": "String255",
+          "description": "Тип метода подключения POST, PUT и т.д.",
+          "required": true,
+          "required_cond": "обязательный, если не указан curl"
+        },
+        {
+          "name": "url",
+          "type": "String255",
+          "description": "url подключения",
+          "required": true,
+          "required_cond": "обязательный, если не указан curl"
+        },
+        {
+          "name": "bodyTemplate",
+          "type": "String255",
+          "description": "Тело запроса",
+          "required": false
+        },
+        {
+          "name": "headers",
+          "type": "Составной headers",
+          "description": "headers запроса",
+          "required": true,
+          "required_cond": "обязательный, если не указан curl"
+        },
+        {
+          "name": "curl",
+          "type": "String255",
+          "description": "экранированный curl запроса",
+          "required": true,
+          "required_cond": "обязательный, если не указаны method, url, headers"
+        },
+        {
+          "name": "authDef",
+          "type": "Составной authDef",
+          "description": "Параметры авторизации",
+          "required": true
+        }
+      ]
+    },
+    "headers": {
+      "parameters": [
+        {
+          "name": "<headers>",
+          "type": "String255",
+          "description": "header запроса",
+          "required": true,
+          "required_cond": "обязательный, если не указан curl"
+        }
+      ]
+    },
+    "authDef": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "Тип авторизации. Один из \"basic\", \"oauth2\"",
+          "required": true
+        },
+        {
+          "name": "basic",
+          "type": "Составной basic",
+          "description": "Параметры для basic авторизации",
+          "required": true,
+          "required_cond": "обязательный, если тип авторизации \"basic\""
+        },
+        {
+          "name": "oauth2",
+          "type": "Составной oauth2",
+          "description": "Параметры для oauth2 авторизации",
+          "required": true,
+          "required_cond": "обязательный, если тип авторизации \"oauth2\""
+        }
+      ]
+    },
+    "basic": {
+      "parameters": [
+        {
+          "name": "login",
+          "type": "String255",
+          "description": "Логин",
+          "required": true,
+          "required_cond": "обязательный, если тип авторизации \"basic\""
+        },
+        {
+          "name": "password",
+          "type": "String255",
+          "description": "Пароль",
+          "required": true,
+          "required_cond": "обязательный, если тип авторизации \"basic\""
+        }
+      ]
+    },
+    "oauth2": {
+      "parameters": [
+        {
+          "name": "issuerLocation",
+          "type": "String255",
+          "description": "url для проверки",
+          "required": true,
+          "required_cond": "обязательный, если тип авторизации \"oauth2\""
+        },
+        {
+          "name": "clientId",
+          "type": "String255",
+          "description": "Id клиента",
+          "required": true,
+          "required_cond": "обязательный, если тип авторизации \"oauth2\""
+        },
+        {
+          "name": "clientSecret",
+          "type": "String255",
+          "description": "Secret клиента",
+          "required": true,
+          "required_cond": "обязательный, если тип авторизации \"oauth2\""
+        },
+        {
+          "name": "grantType",
+          "type": "String255",
+          "description": "На данный момент client_credentials",
+          "required": true,
+          "required_cond": "обязательный, если тип авторизации \"oauth2\""
+        }
+      ]
+    }
+  },
+  "db_call": {
+    "description": "Примитив db_call",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        },
+        {
+          "name": "outputFilter",
+          "type": "String255",
+          "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных.",
+          "required": false
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "args",
+          "type": "JsonObject",
+          "description": "Аргументы на вход activity. Важно! Если в селекте используются переменные с данными из схемы, то их обращение описывается в args",
+          "required": false
+        },
+        {
+          "name": "workflowDef",
+          "type": "Составной SimpleWorkflowDefinition",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательный, если нет workflowRef"
+        }
+      ]
+    },
+    "SimpleWorkflowDefinition": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "db_call",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "databaseCallConfig",
+          "type": "Составной databaseCallConfig",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "databaseCallConfig": {
+      "parameters": [
+        {
+          "name": "databaseCallRef",
+          "type": "Составной databaseCallRef",
+          "description": "Параметры шаблона подключения к БД из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет databaseCallDef"
+        },
+        {
+          "name": "databaseCallDef",
+          "type": "Составной databaseCallDef",
+          "description": "Параметры подключения к БД",
+          "required": true,
+          "required_cond": "обязательный, если нет databaseCallRef"
+        },
+        {
+          "name": "dataSourceId",
+          "type": "String255",
+          "description": "ID шаблона dataSource из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет dataSourceDef"
+        },
+        {
+          "name": "dataSourceDef",
+          "type": "Составной dataSourceDef",
+          "description": "Параметры для авторизации",
+          "required": true,
+          "required_cond": "обязательный, если нет dataSourceId"
+        }
+      ]
+    },
+    "databaseCallRef": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String-UUID",
+          "description": "id шаблона параметров подключения к БД из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет name"
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Наименование шаблона",
+          "required": true,
+          "required_cond": "обязательный, если нет id"
+        },
+        {
+          "name": "version",
+          "type": "Int",
+          "description": "Версия шаблона",
+          "required": false
+        },
+        {
+          "name": "tenantId",
+          "type": "String255",
+          "description": "id системы которая использует шаблон",
+          "required": false
+        }
+      ]
+    },
+    "databaseCallDef": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "Тип подключения, на данный момент возможно один из двух типов подключения: function, select, procedure",
+          "required": true
+        },
+        {
+          "name": "sql",
+          "type": "JSONString",
+          "description": "Описание запроса выборки в формате select. Важно! для postgre селект должен заканчиваться \";\"",
+          "required": true,
+          "required_cond": "обязательный, если type равен \"select\""
+        },
+        {
+          "name": "schema",
+          "type": "String255",
+          "description": "Схема подключения",
+          "required": true,
+          "required_cond": "обязательный для function"
+        },
+        {
+          "name": "catalog",
+          "type": "String255",
+          "description": "Каталог подключения",
+          "required": false
+        },
+        {
+          "name": "functionName",
+          "type": "String255",
+          "description": "Имя функции",
+          "required": true,
+          "required_cond": "обязательный, если type равен \"function\""
+        },
+        {
+          "name": "inParameters",
+          "type": "JSONString",
+          "description": "Описание входных параметров для функции и процедуры",
+          "required": false
+        },
+        {
+          "name": "outParameters",
+          "type": "JSONString",
+          "description": "Описание выходных параметров для функции",
+          "required": false
+        }
+      ]
+    },
+    "dataSourceDef": {
+      "parameters": [
+        {
+          "name": "url",
+          "type": "String255",
+          "description": "url для подключения",
+          "required": true
+        },
+        {
+          "name": "className",
+          "type": "String255",
+          "description": "Тип драйвера (БД)",
+          "required": true
+        },
+        {
+          "name": "userName",
+          "type": "String255",
+          "description": "Имя пользователя",
+          "required": true
+        },
+        {
+          "name": "userPass",
+          "type": "String255",
+          "description": "Пароль пользователя",
+          "required": true
+        }
+      ]
+    }
+  },
+  "send_to_rabbitmq": {
+    "description": "Примитив send_to_rabbitmq",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        },
+        {
+          "name": "outputFilter",
+          "type": "String255",
+          "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных.",
+          "required": false
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "args",
+          "type": "JsonObject",
+          "description": "Аргументы на вход activity",
+          "required": false
+        },
+        {
+          "name": "workflowDef",
+          "type": "Составной SimpleWorkflowDefinition",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательный, если нет workflowRef"
+        }
+      ]
+    },
+    "SimpleWorkflowDefinition": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "send_to_rabbitmq",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "sendToRabbitmqConfig",
+          "type": "Составной sendToRabbitmqConfig",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "sendToRabbitmqConfig": {
+      "parameters": [
+        {
+          "name": "connectionRef",
+          "type": "Составной connectionRef",
+          "description": "Ссылка на шаблон с параметрами подключения",
+          "required": true,
+          "required_cond": "обязательный, если нет connectionDef"
+        },
+        {
+          "name": "connectionDef",
+          "type": "Составной connectionDef",
+          "description": "Параметры подключения",
+          "required": true,
+          "required_cond": "обязательный, если нет connectionRef"
+        },
+        {
+          "name": "exchange",
+          "type": "String255",
+          "description": "Обменник",
+          "required": true
+        },
+        {
+          "name": "routingKey",
+          "type": "String255",
+          "description": "Ключ маршрутизации",
+          "required": true
+        },
+        {
+          "name": "message",
+          "type": "String255",
+          "description": "Тело сообщения",
+          "required": true
+        },
+        {
+          "name": "messageProperties",
+          "type": "Составной",
+          "description": "Параметры сообщения",
+          "required": true
+        }
+      ]
+    },
+    "connectionRef": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String-UUID",
+          "description": "id шаблона параметров подключения к Rabbitmq из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет name"
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Наименование шаблона",
+          "required": true,
+          "required_cond": "обязательный, если нет id"
+        },
+        {
+          "name": "version",
+          "type": "Int",
+          "description": "Версия шаблона",
+          "required": false
+        },
+        {
+          "name": "tenantId",
+          "type": "String255",
+          "description": "id системы которая использует шаблон",
+          "required": false
+        }
+      ]
+    },
+    "connectionDef": {
+      "parameters": [
+        {
+          "name": "userName",
+          "type": "String255",
+          "description": "Имя пользователя",
+          "required": true
+        },
+        {
+          "name": "userPass",
+          "type": "String255",
+          "description": "Пароль пользователя",
+          "required": true
+        },
+        {
+          "name": "addresses",
+          "type": "Массив адресов",
+          "description": "Адрес подключения и порт",
+          "required": true
+        },
+        {
+          "name": "virtualHost",
+          "type": "String255",
+          "description": "Виртуальный хост",
+          "required": true
+        }
+      ]
+    }
+  },
+  "send_to_kafka": {
+    "description": "Примитив send_to_kafka",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        },
+        {
+          "name": "outputFilter",
+          "type": "String255",
+          "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных.",
+          "required": false
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "workflowDef",
+          "type": "Составной SimpleWorkflowDefinition",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательный, если нет workflowRef"
+        }
+      ]
+    },
+    "SimpleWorkflowDefinition": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "send_to_kafka",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "sendToKafkaConfig",
+          "type": "Составной sendToKafkaConfig",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "sendToKafkaConfig": {
+      "parameters": [
+        {
+          "name": "connectionRef",
+          "type": "Составной connectionRef",
+          "description": "Ссылка на шаблон с параметрами подключения",
+          "required": true,
+          "required_cond": "обязательный, если нет connectionDef"
+        },
+        {
+          "name": "connectionDef",
+          "type": "Составной connectionDef",
+          "description": "Параметры подключения",
+          "required": true,
+          "required_cond": "обязательный, если нет connectionRef"
+        },
+        {
+          "name": "topic",
+          "type": "String255",
+          "description": "Наименование топика",
+          "required": true
+        },
+        {
+          "name": "Key",
+          "type": "String255",
+          "description": "Ключ",
+          "required": true
+        },
+        {
+          "name": "message",
+          "type": "Составной message",
+          "description": "Тело сообщения",
+          "required": true
+        },
+        {
+          "name": "messageProperties",
+          "type": "Составной",
+          "description": "Параметры сообщения",
+          "required": true
+        }
+      ]
+    },
+    "connectionRef": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String-UUID",
+          "description": "id шаблона параметров подключения к кафке из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет name"
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Наименование шаблона",
+          "required": true,
+          "required_cond": "обязательный, если нет id"
+        },
+        {
+          "name": "version",
+          "type": "Int",
+          "description": "Версия шаблона",
+          "required": false
+        },
+        {
+          "name": "tenantId",
+          "type": "String255",
+          "description": "id системы которая использует шаблон",
+          "required": false
+        }
+      ]
+    },
+    "message": {
+      "parameters": [
+        {
+          "name": "payload",
+          "type": "String255",
+          "description": "Тело сообщения",
+          "required": true
+        }
+      ]
+    },
+    "connectionDef": {
+      "parameters": [
+        {
+          "name": "bootstrapServers",
+          "type": "String255",
+          "description": "Адрес подключения",
+          "required": true
+        },
+        {
+          "name": "authDef",
+          "type": "Составной authDef",
+          "description": "Параметры подключения",
+          "required": true
+        }
+      ]
+    },
+    "authDef": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "Тип авторизации: SASL, TLS",
+          "required": true,
+          "required_cond": "обязательный, если есть авторизация"
+        },
+        {
+          "name": "sasl",
+          "type": "Составной sasl",
+          "description": "Подключение по sasl",
+          "required": true,
+          "required_cond": "обязательный, если авторизация sasl"
+        },
+        {
+          "name": "tls",
+          "type": "Составной tls",
+          "description": "Подключение по tls",
+          "required": true,
+          "required_cond": "обязательный, если авторизация tls"
+        }
+      ]
+    },
+    "sasl": {
+      "parameters": [
+        {
+          "name": "protocol",
+          "type": "String255",
+          "description": "Протокол подключения: SASL_SSL, SASL_PLAINTEXT",
+          "required": true
+        },
+        {
+          "name": "mechanism",
+          "type": "String255",
+          "description": "Механизм подключения: OAUTHBEARER, SCRAM-SHA-512",
+          "required": true
+        },
+        {
+          "name": "username",
+          "type": "String255",
+          "description": "Логин",
+          "required": true
+        },
+        {
+          "name": "password",
+          "type": "String255",
+          "description": "Пароль",
+          "required": true
+        },
+        {
+          "name": "sslDef",
+          "type": "Составной sslDef",
+          "description": "Сертификаты",
+          "required": true,
+          "required_cond": "обязательный для SCRAM-SHA-512"
+        },
+        {
+          "name": "tokenUrl",
+          "type": "String255",
+          "description": "Url для проверки пользователя",
+          "required": true,
+          "required_cond": "обязательный для OAUTHBEARER"
+        }
+      ]
+    },
+    "sslDef": {
+      "parameters": [
+        {
+          "name": "trustStoreType",
+          "type": "String255",
+          "description": "Тип сертификата: PEM",
+          "required": false
+        },
+        {
+          "name": "trustStoreCertificates",
+          "type": "String",
+          "description": "Тело сертификатов",
+          "required": false
+        }
+      ]
+    },
+    "tls": {
+      "parameters": [
+        {
+          "name": "keyStoreCertificates",
+          "type": "String",
+          "description": "публичный ключ клиента для аутентификации в формате PEM или base64(PEM)",
+          "required": true,
+          "required_cond": "обязательный для TLS"
+        },
+        {
+          "name": "keyStoreKey",
+          "type": "String",
+          "description": "приватный ключ клиента в формате PEM или base64(PEM)",
+          "required": true,
+          "required_cond": "обязательный для TLS"
+        },
+        {
+          "name": "trustStoreCertificates",
+          "type": "String",
+          "description": "корневой сертификат в формате PEM или base64(PEM)",
+          "required": true,
+          "required_cond": "обязательный для TLS"
+        },
+        {
+          "name": "trustStoreType",
+          "type": "String255",
+          "description": "Тип сертификата: PEM",
+          "required": true,
+          "required_cond": "обязательный для TLS"
+        }
+      ]
+    }
+  },
+  "send_to_s3": {
+    "description": "Примитив send_to_s3",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        },
+        {
+          "name": "outputFilter",
+          "type": "String255",
+          "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных.",
+          "required": false
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "args",
+          "type": "JsonObject",
+          "description": "Аргументы на вход activity",
+          "required": false
+        },
+        {
+          "name": "workflowDef",
+          "type": "Составной SimpleWorkflowDefinition",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательный, если нет workflowRef"
+        }
+      ]
+    },
+    "SimpleWorkflowDefinition": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "send_to_s3",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "sendToS3Config",
+          "type": "Составной sendToS3Config",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "sendToS3Config": {
+      "parameters": [
+        {
+          "name": "connectionRef",
+          "type": "Составной connectionRef",
+          "description": "Ссылка на шаблон с параметрами подключения",
+          "required": true,
+          "required_cond": "обязательный, если нет connectionDef"
+        },
+        {
+          "name": "connectionDef",
+          "type": "Составной connectionDef",
+          "description": "Параметры подключения",
+          "required": true,
+          "required_cond": "обязательный, если нет connectionRef"
+        },
+        {
+          "name": "bucket",
+          "type": "String255",
+          "description": "Имя бакета",
+          "required": true
+        },
+        {
+          "name": "key",
+          "type": "String255",
+          "description": "Ключ объекта",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "description": "Содержимое объекта для загрузки",
+          "required": true
+        },
+        {
+          "name": "metadata",
+          "type": "Составной",
+          "description": "Метаданные объекта",
+          "required": false
+        }
+      ]
+    },
+    "connectionRef": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String-UUID",
+          "description": "id шаблона параметров подключения к S3 из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет name"
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Наименование шаблона",
+          "required": true,
+          "required_cond": "обязательный, если нет id"
+        },
+        {
+          "name": "version",
+          "type": "Int",
+          "description": "Версия шаблона",
+          "required": false
+        },
+        {
+          "name": "tenantId",
+          "type": "String255",
+          "description": "id системы которая использует шаблон",
+          "required": false
+        }
+      ]
+    },
+    "connectionDef": {
+      "parameters": [
+        {
+          "name": "accessKey",
+          "type": "String255",
+          "description": "Ключ доступа",
+          "required": true
+        },
+        {
+          "name": "secretKey",
+          "type": "String255",
+          "description": "Секретный ключ",
+          "required": true
+        },
+        {
+          "name": "region",
+          "type": "String255",
+          "description": "Регион S3",
+          "required": true
+        },
+        {
+          "name": "endpoint",
+          "type": "String255",
+          "description": "Эндпоинт S3",
+          "required": false
+        }
+      ]
+    }
+  },
+  "xslt_transform": {
+    "description": "Примитив xslt_transform",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        },
+        {
+          "name": "outputFilter",
+          "type": "String255",
+          "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных.",
+          "required": false
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "args",
+          "type": "JsonObject",
+          "description": "Аргументы на вход activity",
+          "required": false
+        },
+        {
+          "name": "workflowDef",
+          "type": "Составной SimpleWorkflowDefinition",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательный, если нет workflowRef"
+        }
+      ]
+    },
+    "SimpleWorkflowDefinition": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "xslt_transform",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "xsltTransformConfig",
+          "type": "Составной xsltTransformConfig",
+          "description": "Описание деталей трансформации",
+          "required": true
+        }
+      ]
+    },
+    "xsltTransformConfig": {
+      "parameters": [
+        {
+          "name": "xsltTemplate",
+          "type": "String",
+          "description": "XSLT шаблон для трансформации",
+          "required": true
+        },
+        {
+          "name": "input",
+          "type": "String",
+          "description": "Входные данные для трансформации",
+          "required": true
+        }
+      ]
+    }
+  },
+  "send_to_sap": {
+    "description": "Примитив send_to_sap",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        },
+        {
+          "name": "outputFilter",
+          "type": "String255",
+          "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных.",
+          "required": false
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "args",
+          "type": "JsonObject",
+          "description": "Аргументы на вход activity",
+          "required": false
+        },
+        {
+          "name": "workflowDef",
+          "type": "Составной SimpleWorkflowDefinition",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательный, если нет workflowRef"
+        }
+      ]
+    },
+    "SimpleWorkflowDefinition": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "send_to_sap",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "sendToSapConfig",
+          "type": "Составной sendToSapConfig",
+          "description": "Описание параметров отправки idoc в SAP",
+          "required": true
+        }
+      ]
+    },
+    "sendToSapConfig": {
+      "parameters": [
+        {
+          "name": "connectionRef",
+          "type": "Составной connectionRef",
+          "description": "Ссылка на шаблон с параметрами подключения",
+          "required": true,
+          "required_cond": "обязательный, если нет connectionDef"
+        },
+        {
+          "name": "connectionDef",
+          "type": "Составной connectionDef",
+          "description": "Параметры подключения",
+          "required": true,
+          "required_cond": "обязательный, если нет connectionRef"
+        },
+        {
+          "name": "idoc",
+          "type": "String",
+          "description": "Содержимое IDoc для отправки",
+          "required": true
+        },
+        {
+          "name": "idocType",
+          "type": "String255",
+          "description": "Тип IDoc",
+          "required": true
+        }
+      ]
+    },
+    "connectionRef": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String-UUID",
+          "description": "id шаблона параметров подключения к SAP из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет name"
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Наименование шаблона",
+          "required": true,
+          "required_cond": "обязательный, если нет id"
+        },
+        {
+          "name": "version",
+          "type": "Int",
+          "description": "Версия шаблона",
+          "required": false
+        },
+        {
+          "name": "tenantId",
+          "type": "String255",
+          "description": "id системы которая использует шаблон",
+          "required": false
+        }
+      ]
+    },
+    "connectionDef": {
+      "parameters": [
+        {
+          "name": "props",
+          "type": "Составной props",
+          "description": "Параметры подключения",
+          "required": true
+        }
+      ]
+    },
+    "props": {
+      "parameters": [
+        {
+          "name": "jco.client.lang",
+          "type": "String255",
+          "description": "Язык клиента",
+          "required": true
+        },
+        {
+          "name": "jco.client.passwd",
+          "type": "String255",
+          "description": "Пароль",
+          "required": true
+        },
+        {
+          "name": "jco.client.user",
+          "type": "String255",
+          "description": "Логин",
+          "required": true
+        },
+        {
+          "name": "jco.client.sysnr",
+          "type": "Int",
+          "description": "Номер SAP-системы",
+          "required": true
+        },
+        {
+          "name": "jco.destination.pool_capacity",
+          "type": "Int",
+          "description": "Максимальное количество подключений, которые могут находиться в пуле подключений для destination",
+          "required": true
+        },
+        {
+          "name": "jco.destination.peak_limit",
+          "type": "Int",
+          "description": "Максимальное количество одновременных подключений для destination",
+          "required": true
+        },
+        {
+          "name": "jco.client.client",
+          "type": "Int",
+          "description": "Номер клиента в SAP-системе",
+          "required": true
+        },
+        {
+          "name": "jco.client.ashost",
+          "type": "String255",
+          "description": "Хост",
+          "required": true
+        }
+      ]
+    }
+  },
+  "xslt_transform": {
+    "description": "Примитив xslt_transform",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        },
+        {
+          "name": "outputFilter",
+          "type": "String255",
+          "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных.",
+          "required": false
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "args",
+          "type": "JsonObject",
+          "description": "Аргументы на вход activity",
+          "required": true
+        },
+        {
+          "name": "workflowDef",
+          "type": "Составной workflowDef",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательный, если нет workflowRef"
+        }
+      ]
+    },
+    "workflowDef": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "xslt_transform",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "xsltTransformConfig",
+          "type": "Составной xsltTransformConfig",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "xsltTransformConfig": {
+      "parameters": [
+        {
+          "name": "xsltTemplateRef",
+          "type": "Составной xsltTemplateRef",
+          "description": "Ссылка на шаблон трансформации",
+          "required": true,
+          "required_cond": "обязательный, если нет xsltTemplate"
+        },
+        {
+          "name": "xsltTransformTargetRef",
+          "type": "Составной xsltTransformTargetRef",
+          "description": "Ссылка на документ для трансформации",
+          "required": true,
+          "required_cond": "обязательный, если нет xsltTransformTarget"
+        },
+        {
+          "name": "xsltTemplate",
+          "type": "String255",
+          "description": "Шаблон трансформации",
+          "required": true,
+          "required_cond": "обязательный, если нет xsltTemplateRef"
+        },
+        {
+          "name": "xsltTransformTarget",
+          "type": "String255",
+          "description": "Трансформируемый документ",
+          "required": true,
+          "required_cond": "обязательный, если нет xsltTransformTargetRef"
+        }
+      ]
+    },
+    "xsltTemplateRef": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String-UUID",
+          "description": "id шаблона параметров подключения к Rabbitmq из справочника",
+          "required": true,
+          "required_cond": "обязательный, если нет name"
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Наименование шаблона",
+          "required": true,
+          "required_cond": "обязательный, если нет id"
+        },
+        {
+          "name": "version",
+          "type": "Int",
+          "description": "Версия шаблона",
+          "required": false
+        },
+        {
+          "name": "tenantId",
+          "type": "String255",
+          "description": "id системы которая использует шаблон",
+          "required": false
+        }
+      ]
+    },
+    "xsltTransformTargetRef": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String-UUID",
+          "description": "id шаблона параметров трансформации",
+          "required": true,
+          "required_cond": "обязательный, если нет name"
+        },
+        {
+          "name": "name",
+          "type": "String255",
+          "description": "Наименование шаблона",
+          "required": true,
+          "required_cond": "обязательный, если нет id"
+        },
+        {
+          "name": "version",
+          "type": "Int",
+          "description": "Версия шаблона",
+          "required": false
+        },
+        {
+          "name": "tenantId",
+          "type": "String255",
+          "description": "id системы которая использует шаблон",
+          "required": false
+        }
+      ]
+    }
+  },
+  "transform": {
+    "description": "Примитив transform",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "workflow_call",
+          "required": true
+        },
+        {
+          "name": "workflowCall",
+          "type": "Составной WorkflowCall",
+          "description": "Описание activity с типом workflow_call.",
+          "required": true
+        },
+        {
+          "name": "outputFilter",
+          "type": "String255",
+          "description": "Описывает трансформацию исходящих данных после завершения activity, используется для переименования пришедших параметров, объявление переменных.",
+          "required": false
+        }
+      ]
+    },
+    "WorkflowCall": {
+      "parameters": [
+        {
+          "name": "args",
+          "type": "JsonObject",
+          "description": "Аргументы на вход activity",
+          "required": true
+        },
+        {
+          "name": "workflowDef",
+          "type": "Составной workflowDef",
+          "description": "Описание вызываемого подпроцесса.",
+          "required": true,
+          "required_cond": "обязательный, если нет workflowRef"
+        }
+      ]
+    },
+    "workflowDef": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "transform",
+          "required": true
+        },
+        {
+          "name": "details",
+          "type": "Составной details",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "details": {
+      "parameters": [
+        {
+          "name": "transformConfig",
+          "type": "Составной transformConfig",
+          "description": "Описание деталей вызова",
+          "required": true
+        }
+      ]
+    },
+    "transformConfig": {
+      "parameters": [
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "Тип трансформации. На данный момент доступно два вида трансформации: xml_to_json, json_to_xml",
+          "required": true
+        },
+        {
+          "name": "target",
+          "type": "Составной",
+          "description": "Цель трансформации.",
+          "required": true
+        }
+      ]
+    }
+  },
+  "inject": {
+    "description": "Инъекция inject",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "inject",
+          "required": true
+        },
+        {
+          "name": "injectData",
+          "type": "Составной",
+          "description": "Описание атрибутов для вставки.",
+          "required": true
+        }
+      ]
+    }
+  },
+  "switch": {
+    "description": "Условие switch",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "switch",
+          "required": true
+        },
+        {
+          "name": "dataConditions",
+          "type": "Массив из составных dataConditions",
+          "description": "Описание проверяемых условий и действий при успешном их выполнении.",
+          "required": true,
+          "required_cond": "обязательное, если type = \"switch\""
+        },
+        {
+          "name": "defaultTransition",
+          "type": "Составной DefaultDataTransition",
+          "description": "Описание поведения WF, если результат вызова всех condition = false.",
+          "required": true,
+          "required_cond": "обязательное, если type = \"switch\""
+        }
+      ]
+    },
+    "dataConditions": {
+      "parameters": [
+        {
+          "name": "condition",
+          "type": "String400",
+          "description": "Скрипт условия в формате lua.",
+          "required": true
+        },
+        {
+          "name": "conditionDescription",
+          "type": "String400",
+          "description": "Описание условия",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String400",
+          "description": "Указывает на activity id, к которому переходит процесс, если результат вызова condition = true.",
+          "required": false
+        }
+      ]
+    },
+    "DefaultDataTransition": {
+      "parameters": [
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "Указывает на activity id, к которому переходит процесс, если результат вызова всех condition = false.",
+          "required": true
+        },
+        {
+          "name": "conditionDescription",
+          "type": "String400",
+          "description": "Описание условия",
+          "required": false
+        }
+      ]
+    }
+  },
+  "parallel": {
+    "description": "Parallel",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "switch",
+          "required": true
+        },
+        {
+          "name": "branches",
+          "type": "Массив ИД activity",
+          "description": "Список id activity данного WF, которые будут выполняться параллельно.",
+          "required": true,
+          "required_cond": "обязательное, если type = \"parallel\""
+        },
+        {
+          "name": "completionType",
+          "type": "String255",
+          "description": "Тип завершения параллельного activity: anyOf, allOf",
+          "required": true,
+          "required_cond": "обязательное, если type = \"parallel\""
+        }
+      ]
+    }
+  },
+  "timer": {
+    "description": "Timer",
+    "Activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "type": "String255",
+          "description": "ИД activity. Важно! В рамках одного БП не должно быть activity с одинаковым ИД.",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String255",
+          "description": "Описание шага",
+          "required": false
+        },
+        {
+          "name": "transition",
+          "type": "String255",
+          "description": "ИД следующего activity. Если БП или ветка заканчивается на данном activity, то значение будет \"transition\": null",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String255",
+          "description": "timer",
+          "required": true
+        },
+        {
+          "name": "timerDuration",
+          "type": "String256 ISO 8601 duration format",
+          "description": "Таймер, через какое время произойдет переход к следующему activity.",
+          "required": true
+        }
+      ]
+    }
+  }
+}
