@@ -4,7 +4,7 @@ import os
 API_URL = os.environ.get("API_URL", "https://api.gpt.mws.ru")
 MODEL_NAME = os.environ.get("MODEL_NAME", "llama-3.3-70b-instruct")
 SYSTEM_JSON_CREATOR = (
-    "Используя документацию и json-shema,"
+    "Используя документацию и json-schema,"
     "тебе нужно создать Json схему. Ответ должен"
     "содержать только json-схему без дополнительных комментариев."
 )
