@@ -69,6 +69,7 @@ FUNCTION_DEFINITIONS = [
 
 def generate(
     input_data: Union[str, List[Dict[str, Any]]],
+    model: str = MODEL_NAME,
     system_prompt: str = "Ты ассистент для помощи пользователю.",
     json_schema: Optional[Dict] = None,
 ) -> str:
@@ -78,6 +79,7 @@ def generate(
         input_data (Union[str, List[Dict[str, Any]]]):
             Входные данные для генерации ответа. Может быть либо текстом (`prompt`),
             либо историей общения в виде списка сообщений (`messages`).
+        model (str): название модели
         system_prompt (str):
             Системный промпт для модели
         json_schema (Optional[Dict]):
@@ -106,7 +108,7 @@ def generate(
         if json_schema is None:
             response = client.chat.completions.create(
                 messages=request_messages,
-                model=MODEL_NAME,
+                model=model,
             )
         else:
             response = client.chat.completions.create(
@@ -114,7 +116,11 @@ def generate(
                 model=MODEL_NAME,
                 response_format={
                     "type": "json_schema",
-                    "json_schema": json_schema,
+                    "json_schema": {
+                        "name": "clarifierschema",
+                        "schema": json_schema,
+                        "strict": True,
+                    },
                 },
             )
         answer = response.choices[0].message.content

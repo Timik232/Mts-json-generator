@@ -9,6 +9,7 @@
 
 import json
 import logging
+import os
 import re
 import uuid
 from typing import Any, Dict, List
@@ -16,9 +17,12 @@ from typing import Any, Dict, List
 import lancedb
 import numpy as np
 import pandas as pd
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import LanceDB
+from langchain_openai import OpenAIEmbeddings
 from rank_bm25 import BM25Okapi
+
+from .constants import API_URL
+from .utils import SECRET_TOKEN
 
 
 def split_json(json_data: dict[Any]) -> List[Dict[str, Any]]:
@@ -111,8 +115,8 @@ class JsonToLanceDB:
         self.db = lancedb.connect(db_path)
         self.table_name = table_name
         self.table = None
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        self.embeddings = OpenAIEmbeddings(
+            model="bge-m3", base_url=API_URL + "/v1", api_key=SECRET_TOKEN
         )
 
     def add_to_lancedb(self, objects: List[Dict[str, Any]]) -> None:
@@ -265,8 +269,8 @@ class SimpleRetrievalAgent:
         self.top_k = top_k
 
         # Инициализация эмбеддингов
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        self.embeddings = OpenAIEmbeddings(
+            model="bge-m3", base_url=API_URL + "/v1", api_key=SECRET_TOKEN
         )
 
         # Подключение к базе данных
@@ -310,7 +314,7 @@ class SimpleRetrievalAgent:
         self.bm25 = BM25Okapi(self.tokenized_docs)
         self.original_docs = docs
 
-    def hybrid_search(self, query: str, alpha: float = 0.5) -> List[Dict[str, Any]]:
+    def hybrid_search(self, query: str, alpha: float = 0.3) -> List[Dict[str, Any]]:
         """Выполняет гибридный поиск по документам.
 
         Args:
@@ -417,14 +421,19 @@ class SimpleRetrievalAgent:
             print("-" * 80)
 
 
-processor = JsonToLanceDB(db_path="./lancedb", table_name="documents")
-with open("json_generator\DefinitionJSONwithreq.json", "r") as file:
-    data = json.load(file)
-processor.process_json_to_lancedb(data)
+def get_retriever() -> SimpleRetrievalAgent:
+    processor = JsonToLanceDB(db_path="./lancedb", table_name="documents")
+    with open(os.path.join("data", "DefinitionJSONwithreq.json"), "r") as file:
+        data = json.load(file)
+    processor.process_json_to_lancedb(data)
 
-# Создаем ретривер и тестируем поиск
-retriever = SimpleRetrievalAgent(db_path="./lancedb", table_name="documents", top_k=1)
+    # Создаем ретривер и тестируем поиск
+    retriever = SimpleRetrievalAgent(
+        db_path="./lancedb", table_name="documents", top_k=1
+    )
+    logging.info("Lancedb готово")
+    return retriever
 
-# Тестируем поиск с alpha=0.3
-query = "Запрос через REST API"
-retriever.display_hybrid_search_results(query, alpha=0.3)
+    # Тестируем поиск с alpha=0.3
+    # query = "Запрос через REST API"
+    # retriever.display_hybrid_search_results(query, alpha=0.3)

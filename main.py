@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from json_generator import configure_logging, generate
+from json_generator import ClarifierSchema, configure_logging, generate
 
 
 def test_json_generator():
@@ -10,7 +10,7 @@ def test_json_generator():
     Test function to check if the JSON generator works correctly.
     """
     session_id = "test_session_123"
-    message = "Мне нужно сделать rest api для получения списка вакансий. "
+    message = "Мне нужно написать запрос через rest api"
 
     url = "http://localhost:8000/chat"
 
@@ -20,7 +20,7 @@ def test_json_generator():
         response = requests.post(url, json=payload)
 
         if response.status_code == 200:
-            logging.info("Успешно получено:", response.json())
+            logging.info(f"Успешно получено: {response.json()}")
         else:
             logging.error(f"Ошибка: {response.status_code}")
     except Exception as e:
@@ -28,7 +28,8 @@ def test_json_generator():
 
 
 def main():
-    msg = generate("Привет. Ты кто?")
+    print(ClarifierSchema.model_json_schema())
+    msg = generate("Привет. Ты кто?", json_schema=ClarifierSchema.model_json_schema())
     logging.info(msg)
 
 
