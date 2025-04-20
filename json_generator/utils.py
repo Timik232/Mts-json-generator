@@ -28,8 +28,13 @@ class ClarifierSchema(BaseModel):
 
     missing: List[str] = Field(
         ...,
-        description="Список необходимых полей для генерации. Может быть "
+        description="Список пропущенных полей для генерации. Может быть "
         "пустым, если все поля присутствуют.",
+    )
+    mentioned_params: List[Dict[str, Any]] = Field(
+        ...,
+        description="Список полей, которые"
+        " были заполнены в сообщении пользователя. ",
     )
     can_generate_schema: bool = Field(
         ...,
