@@ -1,14 +1,14 @@
+"""Файл для реализации ретривера, который ищет по векторному хранилищу релевантные документы."""
+import logging
 from typing import List
 
-import langchain
-import langchain.document_loaders
 import lancedb
-from langchain_community.vectorstores import LanceDB
-from langchain_core.messages import HumanMessage, SystemMessage
+import langchain
 import langchain.chains
+import langchain.document_loaders
 import langchain.prompts
-import sys
-import logging
+from langchain_community.vectorstores import LanceDB
+
 
 class SimpleRetrievalAgent:
     """
@@ -27,7 +27,12 @@ class SimpleRetrievalAgent:
                 model_name="distiluse-base-multilingual-cased-v1"
             )
             self.vec_store = LanceDB(table, self.embeddings)
-        logging.basicConfig(level=logging.INFO, filename="generation_log.log", filemode="w", encoding='utf-8')
+        logging.basicConfig(
+            level=logging.INFO,
+            filename="generation_log.log",
+            filemode="w",
+            encoding="utf-8",
+        )
 
     def retrieve(self, query: str) -> List[str]:
         search_results = self.vec_store.similarity_search(query, k=self.top_k)
@@ -36,4 +41,3 @@ class SimpleRetrievalAgent:
             min_distance = search_results[0].metadata.get("_distance", 0)
             logging.info(f"Closest document distance: {min_distance}")
         return results
-

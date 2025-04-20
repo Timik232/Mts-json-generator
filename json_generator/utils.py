@@ -1,21 +1,46 @@
+""" Файл для вспомогательных функций и классов"""
 import logging
 import os
 from typing import Any, Dict, List, Optional, Union
 
 import openai
 from openai import OpenAIError
+from pydantic import BaseModel, Field
 
-from .private_api import SECRET_TOKEN
+from .constants import API_URL, MODEL_NAME
 
-API_URL = os.environ.get("API_URL", "https://api.gpt.mws.ru")
-MODEL_NAME = os.environ.get("MODEL_NAME", "gemma-3-27b-it")
-SYSTEM_PROMPT = "Тебе нужно создать Json схему"
+try:
+    from .private_api import SECRET_TOKEN
+except ImportError:
+    SECRET_TOKEN = os.environ.get("SECRET_TOKEN", "")
+
+if SECRET_TOKEN == "":
+    raise ValueError(
+        "SECRET_TOKEN is not set. Please set it as an environment variable."
+    )
+
+
+class VacancySchema(BaseModel):
+    """
+    Pydantic-схема для структурированного ответа от модели Ollama.:
+    title: VacancySchema
+    """
+
+    vacancy: str = Field(..., description="Название вакансии")
+    percentage: int = Field(
+        ..., description="Процент соответствия кандидата вакансии от 0 до 100"
+    )
+    explaining: str = Field(..., description="Описание соответствия кандидата вакансии")
+    recommendations: str = Field(..., description="Рекомендации по улучшению навыков")
+
 
 client = openai.OpenAI(base_url=f"{API_URL}/v1", api_key=SECRET_TOKEN)
 
 
 def generate(
-    input_data: Union[str, List[Dict[str, Any]]], json_schema: Optional[Dict] = None
+    input_data: Union[str, List[Dict[str, Any]]],
+    system_prompt: str = "Ты ассистент для помощи пользователю.",
+    json_schema: Optional[Dict] = None,
 ) -> str:
     """Генерирует ответ на основании введённых данных (текста или истории разговоров).
 
@@ -23,6 +48,8 @@ def generate(
         input_data (Union[str, List[Dict[str, Any]]]):
             Входные данные для генерации ответа. Может быть либо текстом (`prompt`),
             либо историей общения в виде списка сообщений (`messages`).
+        system_prompt (str):
+            Системный промпт для модели
         json_schema (Optional[Dict]):
             Json-схема для форматирования ответа. Если не указана, то не используется.
 
@@ -35,7 +62,7 @@ def generate(
     """
     if isinstance(input_data, str):
         request_messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": input_data},
         ]
     elif isinstance(input_data, list):

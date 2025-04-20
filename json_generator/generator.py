@@ -4,10 +4,10 @@
 
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
-from model_info import custom_model_info
 
+from .constants import API_URL, MODEL_NAME
+from .model_info import custom_model_info
 from .private_api import SECRET_TOKEN
-from .utils import API_URL, MODEL_NAME
 
 
 async def autogen_test():

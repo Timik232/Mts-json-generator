@@ -1,3 +1,4 @@
+"""Файл с реализацией системы агентов для работы программы"""
 import json
 import logging
 from typing import Any, Dict, List
@@ -6,14 +7,25 @@ from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import TextMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
-from .logging_config import configure_logging
+from .constants import (
+    API_URL,
+    CLARIFIER_DESCRIPTION,
+    JSON_DESCRIPTION,
+    MODEL_NAME,
+    SYSTEM_CLARIFIER,
+    SYSTEM_JSON_CREATOR,
+)
 from .model_info import custom_model_info
 from .private_api import SECRET_TOKEN
 from .retrieval import SimpleRetrievalAgent
 from .sessions import SessionContext
-from .utils import API_URL, MODEL_NAME
 
-configure_logging()
+
+def get_assistant_text(response):
+    """Получить текстовое сообщение от ассистента из ответа."""
+    messages, _ = response
+    return next((msg.content for msg in messages if msg.source == "assistant"), None)
+
 
 # Инициализация LLM клиента
 logging.debug("Инициализация OpenAIChatCompletionClient")
@@ -32,12 +44,24 @@ retriever = SimpleRetrievalAgent(
 logging.debug("SimpleRetrievalAgent инициализирован")
 
 # Инициализация агентов
-schema_agent = AssistantAgent(name="schema_generator", model_client=model_client)
-clarification_agent = AssistantAgent(name="clarifier", model_client=model_client)
+schema_agent = AssistantAgent(
+    name="schema_generator",
+    system_message=SYSTEM_JSON_CREATOR,
+    description=JSON_DESCRIPTION,
+    model_client=model_client,
+)
+clarification_agent = AssistantAgent(
+    name="clarifier",
+    system_message=SYSTEM_CLARIFIER,
+    description=CLARIFIER_DESCRIPTION,
+    model_client=model_client,
+)
 logging.info("Агенты schema_generator и clarifier готовы")
 
 
 class ChatManager:
+    """Менеджер чата, осуществляющий управление"""
+
     def __init__(self):
         self.sessions: Dict[str, SessionContext] = {}
         logging.info("ChatManager создан")

@@ -1,11 +1,37 @@
-import asyncio
 import logging
 
-from json_generator import autogen_test, configure_logging
+import requests
+
+from json_generator import configure_logging
+
+
+def test_json_generator():
+    """
+    Test function to check if the JSON generator works correctly.
+    """
+    session_id = "test_session_123"
+    message = "Привет, как твои дела?"
+
+    url = "http://localhost:8000/chat"
+
+    payload = {"session_id": session_id, "message": message}
+
+    try:
+        response = requests.post(url, json=payload)
+
+        if response.status_code == 200:
+            logging.info("Успешно получено:", response.json())
+        else:
+            logging.error(f"Ошибка: {response.status_code}")
+    except Exception as e:
+        logging.error(f"Произошла ошибка: {e}")
+
 
 if __name__ == "__main__":
     configure_logging(logging.DEBUG)
+
     # msg = generate("Привет. Ты кто?")
 
     # logging.info(msg)
-    asyncio.run(autogen_test())
+    # asyncio.run(autogen_test())
+    test_json_generator()
