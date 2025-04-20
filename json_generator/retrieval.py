@@ -21,6 +21,7 @@ from langchain_community.vectorstores import LanceDB
 from langchain_openai import OpenAIEmbeddings
 from rank_bm25 import BM25Okapi
 
+from .WorkflowRuleTreePython import workflow_rule_tree
 from .constants import API_URL
 from .utils import SECRET_TOKEN
 
@@ -423,9 +424,7 @@ class SimpleRetrievalAgent:
 
 def get_retriever() -> SimpleRetrievalAgent:
     processor = JsonToLanceDB(db_path="./lancedb", table_name="documents")
-    with open(os.path.join("data", "DefinitionJSONwithreq.json"), "r") as file:
-        data = json.load(file)
-    processor.process_json_to_lancedb(data)
+    processor.process_json_to_lancedb(workflow_rule_tree)
     # Создаем ретривер и тестируем поиск
     retriever = SimpleRetrievalAgent(
         db_path="./lancedb", table_name="documents", top_k=1
