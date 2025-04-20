@@ -73,13 +73,6 @@ user_proxy = ConversableAgent(
     max_consecutive_auto_reply=10,
     human_input_mode="NEVER",
 )
-# register_function(
-#     docs,
-#     caller=clarification_agent,  # The assistant agent can suggest calls to the calculator.
-#     executor=user_proxy,  # The user proxy agent can execute the calculator calls.
-#     name="docs",  # By default, the function name is used as the tool name.
-#     description="RAG retriever для поиска документации",  # A description of the tool.
-# )
 
 
 @user_proxy.register_for_execution()
@@ -114,6 +107,14 @@ class ChatManager:
         logging.info("ChatManager создан")
         self.model_name = "gemma-3-27b-it"
 
+    def clear_messages(self, session_id: str):
+        try:
+            session = self.sessions.setdefault(session_id, SessionContext())
+            session.clear_session()
+            return True
+        except Exception:
+            return False
+
     async def handle_message(self, session_id: str, message: str) -> Dict[str, Any]:
         session = self.sessions.setdefault(session_id, SessionContext())
         session.update_with_user(message)
@@ -141,7 +142,10 @@ class ChatManager:
             except Exception:
                 logging.warning("Json schema не валидна")
                 answer = generate(
-                    JSON_TASK + " ".join(session.get_messages()),
+                    JSON_TASK
+                    + " ".join(session.get_messages())
+                    + "Схема: "
+                    + session.bd_context,
                     system_prompt=SYSTEM_JSON_CREATOR,
                     model=self.model_name,
                 )
