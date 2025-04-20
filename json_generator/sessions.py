@@ -10,8 +10,23 @@ class SessionContext:
         self.messages: List[str] = []
         self.collected_params: Dict[str, any] = {}
         self.missing_fields: List[str] = []
+        self.bd_context: str = ""
         self.current_schema: Optional[dict] = None
         self.awaiting_clarification: bool = False
+
+    def __len__(self) -> int:
+        """Возвращает количество сообщений в сессии."""
+        return len(self.messages)
+
+    def get_messages(self) -> List[str]:
+        history = []
+        for i in self.messages:
+            history.append(i)
+        return history
+
+    def update_with_bd_context(self, bd_context: str):
+        """Обновляет контекст базы данных."""
+        self.bd_context = bd_context
 
     def update_with_user(self, message: str):
         """Добавляет сообщение в сессию."""

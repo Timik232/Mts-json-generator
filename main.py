@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from json_generator import configure_logging
+from json_generator import configure_logging, generate
 
 
 def test_json_generator():
@@ -10,7 +10,7 @@ def test_json_generator():
     Test function to check if the JSON generator works correctly.
     """
     session_id = "test_session_123"
-    message = "Привет, как твои дела?"
+    message = "Мне нужно сделать rest api для получения списка вакансий. "
 
     url = "http://localhost:8000/chat"
 
@@ -27,11 +27,12 @@ def test_json_generator():
         logging.error(f"Произошла ошибка: {e}")
 
 
+def main():
+    msg = generate("Привет. Ты кто?")
+    logging.info(msg)
+
+
 if __name__ == "__main__":
     configure_logging(logging.DEBUG)
-
-    # msg = generate("Привет. Ты кто?")
-
-    # logging.info(msg)
-    # asyncio.run(autogen_test())
+    # main()
     test_json_generator()

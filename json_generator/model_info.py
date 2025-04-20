@@ -7,6 +7,7 @@ from .constants import (
     FUNCTION_CALLING,
     JSON_OUTPUT,
     MODEL_NAME,
+    STRUCTURED_OUTPUT,
     VISION,
 )
 
@@ -18,4 +19,5 @@ custom_model_info = ModelInfo(
     json_output=JSON_OUTPUT,
     vision=VISION,
     function_calling=FUNCTION_CALLING,
+    structured_output=STRUCTURED_OUTPUT,
 )

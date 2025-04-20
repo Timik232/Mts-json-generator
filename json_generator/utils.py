@@ -20,21 +20,51 @@ if SECRET_TOKEN == "":
     )
 
 
-class VacancySchema(BaseModel):
+class ClarifierSchema(BaseModel):
     """
-    Pydantic-схема для структурированного ответа от модели Ollama.:
-    title: VacancySchema
+    Pydantic-схема для агента по уточнению недостающих полей.:
+    title: ClarifierSchema
     """
 
-    vacancy: str = Field(..., description="Название вакансии")
-    percentage: int = Field(
-        ..., description="Процент соответствия кандидата вакансии от 0 до 100"
+    missing: List[str] = Field(
+        ...,
+        description="Список необходимых полей для генерации. Может быть "
+        "пустым, если все поля присутствуют.",
     )
-    explaining: str = Field(..., description="Описание соответствия кандидата вакансии")
-    recommendations: str = Field(..., description="Рекомендации по улучшению навыков")
+    can_generate_schema: bool = Field(
+        ...,
+        description="Может ли сгенерировать схему"
+        "или отсутствует информация для"
+        "необходимых полей. True значит, что"
+        "может сгенерировать схему.",
+    )
+    message: str = Field(
+        ...,
+        description="Сообщение от агента для пользователя"
+        "просьбой учтонить информацию по недостающим полям.",
+    )
 
 
 client = openai.OpenAI(base_url=f"{API_URL}/v1", api_key=SECRET_TOKEN)
+
+FUNCTION_DEFINITIONS = [
+    {
+        "name": "retrieve_documents",
+        "description": "Выполняет поиск в системе RAG и возвращает список релевантных документов",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Текст запроса для поиска"},
+                "top_k": {
+                    "type": "integer",
+                    "description": "Максимальное число документов для возвращения",
+                    "default": 5,
+                },
+            },
+            "required": ["query"],
+        },
+    }
+]
 
 
 def generate(
