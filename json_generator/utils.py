@@ -1,21 +1,77 @@
+""" Файл для вспомогательных функций и классов"""
 import logging
 import os
 from typing import Any, Dict, List, Optional, Union
 
 import openai
 from openai import OpenAIError
+from pydantic import BaseModel, Field
 
-from .private_api import SECRET_TOKEN
+from .constants import API_URL, MODEL_NAME
 
-API_URL = os.environ.get("API_URL", "https://api.gpt.mws.ru")
-MODEL_NAME = os.environ.get("MODEL_NAME", "gemma-3-27b-it")
-SYSTEM_PROMPT = "Тебе нужно создать Json схему"
+try:
+    from .private_api import SECRET_TOKEN
+except ImportError:
+    SECRET_TOKEN = os.environ.get("SECRET_TOKEN", "")
+
+if SECRET_TOKEN == "":
+    raise ValueError(
+        "SECRET_TOKEN is not set. Please set it as an environment variable."
+    )
+
+
+class ClarifierSchema(BaseModel):
+    """
+    Pydantic-схема для агента по уточнению недостающих полей.:
+    title: ClarifierSchema
+    """
+
+    missing: List[str] = Field(
+        ...,
+        description="Список необходимых полей для генерации. Может быть "
+        "пустым, если все поля присутствуют.",
+    )
+    can_generate_schema: bool = Field(
+        ...,
+        description="Может ли сгенерировать схему"
+        "или отсутствует информация для"
+        "необходимых полей. True значит, что"
+        "может сгенерировать схему.",
+    )
+    message: str = Field(
+        ...,
+        description="Сообщение от агента для пользователя"
+        "просьбой учтонить информацию по недостающим полям.",
+    )
+
 
 client = openai.OpenAI(base_url=f"{API_URL}/v1", api_key=SECRET_TOKEN)
 
+FUNCTION_DEFINITIONS = [
+    {
+        "name": "retrieve_documents",
+        "description": "Выполняет поиск в системе RAG и возвращает список релевантных документов",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Текст запроса для поиска"},
+                "top_k": {
+                    "type": "integer",
+                    "description": "Максимальное число документов для возвращения",
+                    "default": 5,
+                },
+            },
+            "required": ["query"],
+        },
+    }
+]
+
 
 def generate(
-    input_data: Union[str, List[Dict[str, Any]]], json_schema: Optional[Dict] = None
+    input_data: Union[str, List[Dict[str, Any]]],
+    model: str = MODEL_NAME,
+    system_prompt: str = "Ты ассистент для помощи пользователю.",
+    json_schema: Optional[Dict] = None,
 ) -> str:
     """Генерирует ответ на основании введённых данных (текста или истории разговоров).
 
@@ -23,6 +79,9 @@ def generate(
         input_data (Union[str, List[Dict[str, Any]]]):
             Входные данные для генерации ответа. Может быть либо текстом (`prompt`),
             либо историей общения в виде списка сообщений (`messages`).
+        model (str): название модели
+        system_prompt (str):
+            Системный промпт для модели
         json_schema (Optional[Dict]):
             Json-схема для форматирования ответа. Если не указана, то не используется.
 
@@ -35,7 +94,7 @@ def generate(
     """
     if isinstance(input_data, str):
         request_messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": input_data},
         ]
     elif isinstance(input_data, list):
@@ -49,7 +108,7 @@ def generate(
         if json_schema is None:
             response = client.chat.completions.create(
                 messages=request_messages,
-                model=MODEL_NAME,
+                model=model,
             )
         else:
             response = client.chat.completions.create(
@@ -57,7 +116,11 @@ def generate(
                 model=MODEL_NAME,
                 response_format={
                     "type": "json_schema",
-                    "json_schema": json_schema,
+                    "json_schema": {
+                        "name": "clarifierschema",
+                        "schema": json_schema,
+                        "strict": True,
+                    },
                 },
             )
         answer = response.choices[0].message.content

@@ -49,8 +49,10 @@ class ColoredFormatter(Formatter):
         Returns:
             str: Отформатированное сообщение с цветовыми кодами
         """
-        color_code = hex_to_ansi(LOG_COLORS.get(record.levelname, ""))
         message = super().format(record)
+        if isinstance(message, bytes):
+            message = message.decode("utf-8", "replace")
+        color_code = hex_to_ansi(LOG_COLORS.get(record.levelname, ""))
         return f"{color_code}{message}{RESET_COLOR}"
 
 

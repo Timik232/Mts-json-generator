@@ -7,23 +7,22 @@
 - Гибридного поиска с использованием BM25 и векторного поиска
 """
 
-import uuid
-import re
 import json
-import lancedb
-import pandas as pd
-import numpy as np
-from typing import List, Dict, Any
-from rank_bm25 import BM25Okapi
 import logging
+import os
+import re
+import uuid
+from typing import Any, Dict, List
 
-import langchain
-import langchain.document_loaders
+import lancedb
+import numpy as np
+import pandas as pd
 from langchain_community.vectorstores import LanceDB
-from langchain_community.embeddings import HuggingFaceEmbeddings
-import langchain.chains
-import langchain.prompts
-import pyarrow as pa
+from langchain_openai import OpenAIEmbeddings
+from rank_bm25 import BM25Okapi
+
+from .constants import API_URL
+from .utils import SECRET_TOKEN
 
 
 def split_json(json_data: dict[Any]) -> List[Dict[str, Any]]:
@@ -49,13 +48,13 @@ def split_json(json_data: dict[Any]) -> List[Dict[str, Any]]:
         else:
             # Для других типов просто создаем строку
             content = f"{key}: {value}"
-        
+
         # Создаем документ
         doc = {
-            'id': str(uuid.uuid4()),
-            'content': content,
-            'original_key': key,
-            'original_value': json.dumps(value)
+            "id": str(uuid.uuid4()),
+            "content": content,
+            "original_key": key,
+            "original_value": json.dumps(value),
         }
         result.append(doc)
     return result
@@ -72,9 +71,9 @@ def preprocess_text(text: str) -> str:
              и нормализованными пробелами.
     """
     # Удаляем специальные символы и приводим к нижнему регистру
-    text = re.sub(r'[^\w\s]', ' ', text.lower())
+    text = re.sub(r"[^\w\s]", " ", text.lower())
     # Заменяем множественные пробелы на один
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
@@ -90,9 +89,9 @@ def preprocess_query(query: str) -> str:
     # Приводим к нижнему регистру
     query = query.lower()
     # Удаляем специальные символы
-    query = re.sub(r'[^\w\s]', ' ', query)
+    query = re.sub(r"[^\w\s]", " ", query)
     # Заменяем множественные пробелы на один
-    query = re.sub(r'\s+', ' ', query)
+    query = re.sub(r"\s+", " ", query)
     return query.strip()
 
 
@@ -116,8 +115,8 @@ class JsonToLanceDB:
         self.db = lancedb.connect(db_path)
         self.table_name = table_name
         self.table = None
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        self.embeddings = OpenAIEmbeddings(
+            model="bge-m3", base_url=API_URL + "/v1", api_key=SECRET_TOKEN
         )
 
     def add_to_lancedb(self, objects: List[Dict[str, Any]]) -> None:
@@ -130,22 +129,24 @@ class JsonToLanceDB:
             return
 
         # Создаем векторные эмбеддинги для каждого документа
-        texts = [obj['content'] for obj in objects]
+        texts = [obj["content"] for obj in objects]
         vectors = self.embeddings.embed_documents(texts)
-        
+
         # Создаем DataFrame с данными
         data = {
-            'id': [obj['id'] for obj in objects],
-            'content': [obj['content'] for obj in objects],
-            'vector': vectors,
-            'original_key': [obj['original_key'] for obj in objects],
-            'original_value': [obj['original_value'] for obj in objects]
+            "id": [obj["id"] for obj in objects],
+            "content": [obj["content"] for obj in objects],
+            "vector": vectors,
+            "original_key": [obj["original_key"] for obj in objects],
+            "original_value": [obj["original_value"] for obj in objects],
         }
         df = pd.DataFrame(data)
 
         # Create table if it doesn't exist
         if self.table is None:
-            self.table = self.db.create_table(self.table_name, data=df, mode="overwrite")
+            self.table = self.db.create_table(
+                self.table_name, data=df, mode="overwrite"
+            )
         else:
             self.table.add(df)
 
@@ -161,17 +162,17 @@ class JsonToLanceDB:
     def display_table_contents(self, limit: int = 10) -> None:
         """
         Отображает содержимое таблицы в удобном для чтения формате.
-        
+
         Args:
             limit (int): Максимальное количество записей для отображения
         """
         if self.table is None:
             print("Таблица не существует или не была инициализирована")
             return
-            
+
         # Получаем данные из таблицы
         data = self.table.to_pandas().head(limit)
-        
+
         print(f"\nСодержимое таблицы '{self.table_name}':")
         print("-" * 80)
         for idx, row in data.iterrows():
@@ -179,8 +180,10 @@ class JsonToLanceDB:
             print(f"ID: {row['id']}")
             try:
                 # Парсим JSON и выводим в читаемом формате
-                content = json.loads(row['content'])
-                print(f"Содержимое: {json.dumps(content, ensure_ascii=False, indent=2)}")
+                content = json.loads(row["content"])
+                print(
+                    f"Содержимое: {json.dumps(content, ensure_ascii=False, indent=2)}"
+                )
             except json.JSONDecodeError as e:
                 print(f"Ошибка при парсинге JSON: {e}")
                 print(f"Сырые данные: {row['content']}")
@@ -211,6 +214,7 @@ def extract_text_from_json(json_str: str) -> str:
     except json.JSONDecodeError:
         return json_str
 
+
 def tokenize_text(text: str) -> List[str]:
     """Токенизация текста с учетом особенностей JSON"""
     # Извлекаем текстовое содержимое из JSON
@@ -221,11 +225,11 @@ def tokenize_text(text: str) -> List[str]:
     tokens = []
     for word in text.split():
         # Если это JSON-ключ или значение, разбиваем по camelCase и snake_case
-        if '_' in word or any(c.isupper() for c in word):
+        if "_" in word or any(c.isupper() for c in word):
             # Разбиваем по camelCase
-            camel_case = re.sub('([A-Z][a-z]+)', r' \1', word)
+            camel_case = re.sub("([A-Z][a-z]+)", r" \1", word)
             # Разбиваем по snake_case
-            snake_case = camel_case.replace('_', ' ')
+            snake_case = camel_case.replace("_", " ")
             tokens.extend(snake_case.lower().split())
         else:
             tokens.append(word)
@@ -263,49 +267,54 @@ class SimpleRetrievalAgent:
         self.db_path = db_path
         self.table_name = table_name
         self.top_k = top_k
-        
+
         # Инициализация эмбеддингов
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        self.embeddings = OpenAIEmbeddings(
+            model="bge-m3", base_url=API_URL + "/v1", api_key=SECRET_TOKEN
         )
-        
+
         # Подключение к базе данных
         self.db = lancedb.connect(db_path)
         if table_name not in self.db.table_names():
             raise ValueError(f"Таблица {table_name} не существует в базе данных")
-            
+
         self.table = self.db.open_table(table_name)
-        
+
         # Инициализация BM25
         self._init_bm25()
-        
+
         # Инициализация векторного хранилища
         self.vector_store = LanceDB(
             table=self.table,
             embedding=self.embeddings,
             text_key="content",
-            vector_key="vector"
+            vector_key="vector",
         )
-        
-        logging.basicConfig(level=logging.INFO, filename="retrieval_log.log", filemode="w", encoding='utf-8')
+
+        logging.basicConfig(
+            level=logging.INFO,
+            filename="retrieval_log.log",
+            filemode="w",
+            encoding="utf-8",
+        )
 
     def _init_bm25(self):
         """Инициализирует BM25 индекс для поиска."""
         docs = self.table.to_pandas()
         # Токенизируем тексты
         self.tokenized_docs = []
-        for doc in docs['content']:
+        for doc in docs["content"]:
             tokens = doc.split()
             if tokens:  # Проверяем, что есть токены
                 self.tokenized_docs.append(tokens)
-        
+
         if not self.tokenized_docs:
             raise ValueError("Нет документов для индексации BM25")
-            
+
         self.bm25 = BM25Okapi(self.tokenized_docs)
         self.original_docs = docs
 
-    def hybrid_search(self, query: str, alpha: float = 0.5) -> List[Dict[str, Any]]:
+    def hybrid_search(self, query: str, alpha: float = 0.3) -> List[Dict[str, Any]]:
         """Выполняет гибридный поиск по документам.
 
         Args:
@@ -319,51 +328,65 @@ class SimpleRetrievalAgent:
         try:
             # Предобрабатываем запрос
             processed_query = preprocess_query(query)
-            
+
             # BM25 поиск
             bm25_scores = self.bm25.get_scores(processed_query.split())
-            
+
             # Векторный поиск
             query_embedding = self.embeddings.embed_query(processed_query)
-            vector_results = self.table.search(query_embedding, vector_column_name="vector").limit(self.top_k).to_pandas()
-            
+            vector_results = (
+                self.table.search(query_embedding, vector_column_name="vector")
+                .limit(self.top_k)
+                .to_pandas()
+            )
+
             # Создаем массив для векторных оценок
             vector_scores = np.zeros(len(self.original_docs))
             if not vector_results.empty:
-                for idx, row in vector_results.iterrows():
+                for _, row in vector_results.iterrows():
                     try:
-                        doc_idx = self.original_docs[self.original_docs['id'] == row['id']].index[0]
-                        vector_scores[doc_idx] = 1 - row['_distance'] / vector_results['_distance'].max()
+                        doc_idx = self.original_docs[
+                            self.original_docs["id"] == row["id"]
+                        ].index[0]
+                        vector_scores[doc_idx] = (
+                            1 - row["_distance"] / vector_results["_distance"].max()
+                        )
                     except Exception as e:
-                        logging.error(f"Ошибка при обработке документа {row['id']}: {str(e)}")
-            
+                        logging.error(
+                            f"Ошибка при обработке документа {row['id']}: {str(e)}"
+                        )
+
             # Нормализуем BM25 оценки
-            bm25_scores = (bm25_scores - bm25_scores.min()) / (bm25_scores.max() - bm25_scores.min() + 1e-6)
-            
+            bm25_scores = (bm25_scores - bm25_scores.min()) / (
+                bm25_scores.max() - bm25_scores.min() + 1e-6
+            )
+
             # Комбинируем оценки
             combined_scores = alpha * vector_scores + (1 - alpha) * bm25_scores
-            
+
             # Получаем топ-k результатов
-            top_indices = np.argsort(combined_scores)[-self.top_k:][::-1]
-            
+            top_indices = np.argsort(combined_scores)[-self.top_k :][::-1]
+
             # Форматируем результаты
             results = []
             for idx in top_indices:
                 doc = self.original_docs.iloc[idx]
-                results.append({
-                    "content": doc['content'],
-                    "score": combined_scores[idx],
-                    "bm25_score": bm25_scores[idx],
-                    "vector_score": vector_scores[idx],
-                    "metadata": {
-                        "id": doc['id'],
-                        "original_key": doc['original_key'],
-                        "original_value": doc['original_value']
+                results.append(
+                    {
+                        "content": doc["content"],
+                        "score": combined_scores[idx],
+                        "bm25_score": bm25_scores[idx],
+                        "vector_score": vector_scores[idx],
+                        "metadata": {
+                            "id": doc["id"],
+                            "original_key": doc["original_key"],
+                            "original_value": doc["original_value"],
+                        },
                     }
-                })
-            
+                )
+
             return results
-            
+
         except Exception as e:
             logging.error(f"Ошибка при гибридном поиске: {str(e)}")
             return []
@@ -377,41 +400,39 @@ class SimpleRetrievalAgent:
                                    По умолчанию 0.5.
         """
         results = self.hybrid_search(query, alpha)
-        
+
         if not results:
             print(f"\nПо запросу '{query}' ничего не найдено")
             return
-            
+
         print(f"\nРезультаты гибридного поиска по запросу: '{query}'")
         print(f"Вес векторного поиска: {alpha}")
         print("-" * 80)
-        
+
         for idx, result in enumerate(results, 1):
             print(f"Результат #{idx}")
             print(f"Общий score: {result['score']:.4f}")
             print(f"BM25 score: {result['bm25_score']:.4f}")
             print(f"Векторный score: {result['vector_score']:.4f}")
             print("Содержимое:")
-            print(result['content'])
+            print(result["content"])
             print("Метаданные:")
-            print(json.dumps(result['metadata'], ensure_ascii=False, indent=2))
+            print(json.dumps(result["metadata"], ensure_ascii=False, indent=2))
             print("-" * 80)
 
 
-## Example usage
+def get_retriever() -> SimpleRetrievalAgent:
+    processor = JsonToLanceDB(db_path="./lancedb", table_name="documents")
+    with open(os.path.join("data", "DefinitionJSONwithreq.json"), "r") as file:
+        data = json.load(file)
+    processor.process_json_to_lancedb(data)
+    # Создаем ретривер и тестируем поиск
+    retriever = SimpleRetrievalAgent(
+        db_path="./lancedb", table_name="documents", top_k=1
+    )
+    logging.info("Lancedb готово")
+    return retriever
 
-processor = JsonToLanceDB(db_path="./lancedb", table_name="documents")
-with open('json_generator\DefinitionJSONwithreq.json', 'r') as file:
-    data = json.load(file)
-processor.process_json_to_lancedb(data)
-
-# Создаем ретривер и тестируем поиск
-retriever = SimpleRetrievalAgent(
-    db_path="./lancedb",
-    table_name="documents",
-    top_k=2
-)
-
-# Тестируем поиск с alpha=0.3
-query = "Отправка в REST API"
-retriever.display_hybrid_search_results(query, alpha=0.3)
+    # Тестируем поиск с alpha=0.3
+    # query = "Запрос через REST API"
+    # retriever.display_hybrid_search_results(query, alpha=0.3)

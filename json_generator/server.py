@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -28,12 +30,18 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     session_id: str
     response: str
+    json_schema: dict | str = ""
 
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
     try:
         res = await chat_manager.handle_message(req.session_id, req.message)
-        return ChatResponse(session_id=req.session_id, response=res)
+        return ChatResponse(
+            session_id=req.session_id,
+            response=res["message"],
+            json_schema=res["json_schema"],
+        )
     except Exception as e:
+        logging.error(e)
         raise HTTPException(status_code=500, detail=str(e))
