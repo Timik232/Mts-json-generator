@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class SessionContext:
@@ -8,7 +8,7 @@ class SessionContext:
 
     def __init__(self):
         self.messages: List[str] = []
-        self.collected_params: Dict[str, any] = {}
+        self.collected_params: Dict[str, Any] = {}
         self.missing_fields: List[str] = []
         self.bd_context: str = ""
         self.model_type: str = ""
@@ -58,7 +58,7 @@ class SessionContext:
         self.current_schema = None
         self.awaiting_clarification = False
 
-    def add_collected_param(self, key: str, value: any):
+    def add_collected_param(self, key: str, value: Any):
         """
         Добавляет параметр в коллекцию collected_params.
         Если ключ уже существует, перезаписывает его новым значением.

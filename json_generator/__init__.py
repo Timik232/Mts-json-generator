@@ -9,8 +9,12 @@ try:
     from .private_api import SECRET_TOKEN
 except ImportError:
     SECRET_TOKEN = os.environ.get("SECRET_TOKEN", "")
-except ModuleNotFoundError:
-    SECRET_TOKEN = os.environ.get("SECRET_TOKEN", "")
+if not SECRET_TOKEN:
+    import logging
+
+    logging.warning(
+        "SECRET_TOKEN not found in private_api or environment variables. API calls may fail."
+    )
 
 __all__ = [
     "generate",

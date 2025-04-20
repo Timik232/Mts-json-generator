@@ -49,7 +49,7 @@ async def chat_endpoint(req: ChatRequest):
         )
     except Exception as e:
         logging.error(e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/clear")
@@ -66,4 +66,4 @@ async def clear(session_id: SessionID):
             )
     except Exception as e:
         logging.error(e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

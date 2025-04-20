@@ -25,7 +25,11 @@ JSON Schema Generator — это решение на базе ИИ, которо
 
 1. Клонируйте репозиторий:
 
-2. Укажите `SECRET_TOKEN` для api к системе МТС в docker-compose:
+2. Укажите `SECRET_TOKEN` для api к системе МТС в compose.yaml:
+```yaml
+   environment:
+     - SECRET_TOKEN=your_token_here
+```
 
 3. Запустите приложение с помощью Docker Compose:
    ```bash
