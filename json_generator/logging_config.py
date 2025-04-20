@@ -70,7 +70,7 @@ def configure_logging(level: int = logging.INFO) -> None:
         Поддерживаются только уровни logging.INFO и logging.DEBUG
     """
     if level != logging.INFO and level != logging.DEBUG:
-        raise ValueError("You can use only logging.info or logging.debug")
+        raise ValueError("You can use only logging.INFO or logging.DEBUG")
     handler = StreamHandler()
     handler.setFormatter(
         ColoredFormatter(
