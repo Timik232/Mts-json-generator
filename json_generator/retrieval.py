@@ -1,13 +1,53 @@
-"""Файл для реализации ретривера, который ищет по векторному хранилищу релевантные документы."""
+import json
 import logging
-from typing import List
+import uuid
+from typing import Any, Dict, List
 
 import lancedb
 import langchain
 import langchain.chains
 import langchain.document_loaders
 import langchain.prompts
+import pyarrow as pa
 from langchain_community.vectorstores import LanceDB
+
+
+def split_json(json_data: dict[Any]) -> List[Dict[str, Any]]:
+    parsed_data = json_data
+    result = []
+    for item in parsed_data.items():
+        obj_id = parsed_data.get("id", str(uuid.uuid4()))
+        content = json.dumps(f"{item[0]} structure: {item[1]}")
+        result.append({"id": obj_id, "content": content})
+    return result
+
+
+class JsonToLanceDB:
+    def __init__(self, db_path: str, table_name: str):
+        self.db = lancedb.connect(db_path)
+        self.table_name = table_name
+        self.table = None
+
+    def add_to_lancedb(self, objects: List[Dict[str, Any]]) -> None:
+        if not objects:
+            print("No objects to add to LanceDB")
+            return
+
+        # Create table if it doesn't exist
+        if self.table is None:
+            schema = pa.schema([("id", pa.string()), ("content", pa.string())])
+
+            self.table = self.db.create_table(
+                self.table_name, schema=schema, mode="overwrite"
+            )
+
+        # Add documents to table
+        self.table.add(objects)
+        print(f"Successfully added {len(objects)} documents to {self.table_name}")
+
+    def process_json_to_lancedb(self, json_data: dict[Any]) -> None:
+        objects = split_json(json_data)
+        self.add_to_lancedb(objects)
 
 
 class SimpleRetrievalAgent:
