@@ -426,7 +426,6 @@ def get_retriever() -> SimpleRetrievalAgent:
     with open(os.path.join("data", "DefinitionJSONwithreq.json"), "r") as file:
         data = json.load(file)
     processor.process_json_to_lancedb(data)
-
     # Создаем ретривер и тестируем поиск
     retriever = SimpleRetrievalAgent(
         db_path="./lancedb", table_name="documents", top_k=1
