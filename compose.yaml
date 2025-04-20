@@ -7,7 +7,7 @@ services:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
-      - SECRET_TOKEN=sk-KNo006G2a48UVE3IxFlQEQ
+      - SECRET_TOKEN=INSERT_TOKEN
     networks:
       - generator
 
