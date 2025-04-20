@@ -49,6 +49,7 @@ class SessionContext:
     def clear_session(self):
         """Очищает данные сессии."""
         self.messages.clear()
+        self.bd_context = ""
         self.collected_params.clear()
         self.missing_fields.clear()
         self.current_schema = None

@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Annotated, Any, Dict
 
-from autogen import ConversableAgent, GroupChat, GroupChatManager
+from autogen import Cache, ConversableAgent, GroupChat, GroupChatManager
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
@@ -21,10 +21,9 @@ from .constants import (
 )
 from .logging_config import configure_logging
 from .model_info import custom_model_info
-from .private_api import SECRET_TOKEN
 from .retrieval import get_retriever
 from .sessions import SessionContext
-from .utils import ClarifierSchema, generate
+from .utils import SECRET_TOKEN, ClarifierSchema, generate
 
 configure_logging()
 
@@ -74,13 +73,6 @@ user_proxy = ConversableAgent(
     max_consecutive_auto_reply=10,
     human_input_mode="NEVER",
 )
-# register_function(
-#     docs,
-#     caller=clarification_agent,  # The assistant agent can suggest calls to the calculator.
-#     executor=user_proxy,  # The user proxy agent can execute the calculator calls.
-#     name="docs",  # By default, the function name is used as the tool name.
-#     description="RAG retriever для поиска документации",  # A description of the tool.
-# )
 
 
 @user_proxy.register_for_execution()
@@ -101,7 +93,7 @@ def retrieve_documents(
 
 
 group_chat = GroupChat(
-    agents=[user_proxy, clarification_agent], messages=[], max_round=2
+    agents=[user_proxy, clarification_agent], messages=[], max_round=4
 )
 manager = GroupChatManager(groupchat=group_chat, llm_config=llm_config)
 logging.info("Агенты schema_generator и clarifier готовы")
@@ -115,13 +107,18 @@ class ChatManager:
         logging.info("ChatManager создан")
         self.model_name = "gemma-3-27b-it"
 
+    def clear_messages(self, session_id: str):
+        try:
+            session = self.sessions.setdefault(session_id, SessionContext())
+            session.clear_session()
+            return True
+        except Exception:
+            return False
+
     async def handle_message(self, session_id: str, message: str) -> Dict[str, Any]:
         session = self.sessions.setdefault(session_id, SessionContext())
         session.update_with_user(message)
-        print(1)
         result = self._detect_missing_params(session)
-        print(2)
-        print(result)
         try:
             json_result = json.loads(result)
         except json.JSONDecodeError:
@@ -130,70 +127,29 @@ class ChatManager:
                 "message": "Произошла внутренняя ошибка, попробуйте снова",
                 "json_schema": "",
             }
-        print(json_result)
         if not json_result["can_generate_schema"]:
             return {"message": json_result["message"], "json_schema": ""}
         else:
-            return {
-                "message": "Полученная схема",
-                "json_schema": generate(
-                    JSON_TASK + " ".join(session.get_messages()),
+            try:
+                answer = (
+                    generate(
+                        JSON_TASK + " ".join(session.get_messages()),
+                        system_prompt=SYSTEM_JSON_CREATOR,
+                        model=self.model_name,
+                        json_schema=json.loads(session.bd_context),
+                    ),
+                )
+            except Exception:
+                logging.warning("Json schema не валидна")
+                answer = generate(
+                    JSON_TASK
+                    + " ".join(session.get_messages())
+                    + "Схема: "
+                    + session.bd_context,
                     system_prompt=SYSTEM_JSON_CREATOR,
                     model=self.model_name,
-                ),
-            }
-
-    async def deprecated_handle_message(self, session_id: str, message: str) -> str:
-        logging.debug(f"handle_message: session_id={session_id}, message={message}")
-        session = self.sessions.setdefault(session_id, SessionContext())
-        session.update_with_user(message)
-        if len(session) == 1:
-            bd_context = await self._retrieve(message)
-            session.update_with_bd_context(bd_context)
-            task_result = await self._detect_missing_params(bd_context, session)
-            generated = self._extract_content(task_result)
-            print(generated)
-            return "1"
-        # 1. Если ждём уточнения
-        if session.awaiting_clarification:
-            logging.info("Обработка уточнения от пользователя")
-            # TODO: реализовать парсинг уточнения и обновление session.collected_params
-            session.clear_missing()
-            return await self._generate_schema(session)
-
-        # 2. Проверяем недостающие параметры
-        missing = self._detect_missing_params(message, session)
-        if missing:
-            session.set_missing(missing)
-            prompt = (
-                f"Пожалуйста, уточните следующие поля для схемы: {', '.join(missing)}."
-            )
-            logging.info(f"Недостающие поля: {missing}")
-            task_result = await clarification_agent.run(task=prompt)
-            content = self._extract_content(task_result)
-            logging.debug(f"ClarificationAgent ответил: {content}")
-            return content
-
-        # 3. Генерация схемы
-        if session.current_schema is None:
-            logging.info("Генерация новой схемы")
-            return await self._generate_schema(session)
-
-        # 4. Модификация
-        logging.info("Модификация существующей схемы")
-        prompt = (
-            f"Измени текущую JSON-схему: {json.dumps(session.current_schema)} "
-            f"в соответствии с: {message}"
-        )
-        task_result = await schema_agent.run(task=prompt)
-        updated = self._extract_content(task_result)
-        logging.debug(f"SchemaAgent ответил: {updated}")
-        try:
-            session.set_schema(json.loads(updated))
-            logging.info("Схема успешно обновлена в контексте сессии")
-        except json.JSONDecodeError:
-            logging.error("Не удалось распарсить ответ SchemaAgent как JSON")
-        return updated
+                )
+            return {"message": "Полученная схема", "json_schema": answer}
 
     async def _generate_schema(self, session: SessionContext) -> str:
         logging.info("Выполняется _generate_schema")
@@ -220,27 +176,21 @@ class ChatManager:
             logging.error("Ответ агента не является валидным JSON")
         return generated
 
-    async def _retrieve(self, message: str) -> str:
-        logging.info("Выполняется _retrieve")
-        # task_result = await retriever.run(task=message)
-        task_result = "Документация, json схема"
-        logging.debug(f"Retrieved docs: {task_result}")
-        return task_result
-
     def _detect_missing_params(self, session: SessionContext) -> str:
         history = session.get_messages()
         history.append(CLARIFIER_TASK)
         history = " ".join(history)
-        print(history)
-        chat_result = user_proxy.initiate_chat(
-            clarification_agent,
-            message=history,
-            max_turns=2,
-            summary_method="reflection_with_llm",
-        )
-        print(chat_result)
+        with Cache.disk() as cache:
+            chat_result = user_proxy.initiate_chat(
+                clarification_agent,
+                message=history,
+                max_turns=4,
+                summary_method="reflection_with_llm",
+                cache=cache,
+            )
+
         chat_text = self._extract_content(chat_result)
-        print(f"extracted {chat_text}")
+        session.update_with_bd_context(self._extract_tool_responses(chat_result)[0])
         prompt = CLARIFY_JSON_TASK + chat_text
         raw_answer = generate(
             prompt,
@@ -250,7 +200,6 @@ class ChatManager:
         )
 
         return raw_answer
-        # return missing
 
     def _extract_summary(self, task_result: dict | Any) -> str:
         return task_result.summary
@@ -293,19 +242,13 @@ class ChatManager:
 
         return "\n".join(history)
 
-    def _extract_tool_responses(self, chat_result: dict | Any) -> list:
+    def _extract_tool_responses(self, chat_result: dict | Any) -> str:
         """Извлекает все ответы от инструментов (tool responses) из истории чата"""
-        tool_responses = []
-
-        for msg in chat_result.chat_history:
-            if msg.get("role") == "tool" and "tool_responses" in msg:
-                for response in msg["tool_responses"]:
-                    tool_responses.append(
-                        {
-                            "tool_call_id": response["tool_call_id"],
-                            "content": response["content"],
-                            "role": msg["role"],
-                            "name": msg.get("name", "unknown"),
-                        }
-                    )
-        return tool_responses
+        for msg in reversed(chat_result.chat_history):
+            if msg.get("role") == "tool" and msg.get("tool_responses"):
+                # Берем последний ответ из списка tool_responses
+                last_response = msg["tool_responses"][-1]
+                print("__________________")
+                print(last_response["content"])
+                return last_response["content"]
+        return ""
