@@ -409,9 +409,9 @@ processor.process_json_to_lancedb(data)
 retriever = SimpleRetrievalAgent(
     db_path="./lancedb",
     table_name="documents",
-    top_k=1
+    top_k=2
 )
 
 # Тестируем поиск с alpha=0.3
-query = "Запрос через REST API"
+query = "Отправка в REST API"
 retriever.display_hybrid_search_results(query, alpha=0.3)
