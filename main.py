@@ -10,8 +10,11 @@ def test_json_generator():
     Test function to check if the JSON generator works correctly.
     """
     session_id = "test_session_123"
-    message = "Мне нужно написать запрос через rest api"
-
+    # message = "Мне нужно написать запрос через rest api"
+    # message = ("мне надо схему, я принимаю запрос из верховного суда,"
+    #            "нас всех судят нужно энтити в бд и на петровке,хакатон ,"
+    #            "уголовная статья, sessionId=iolg4t0a")
+    message = "type=TEXT, content=Прими из апи сообщение sessionId=cyjqiay3"
     url = "http://localhost:8000/chat"
 
     payload = {"session_id": session_id, "message": message}

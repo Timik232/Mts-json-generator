@@ -7,13 +7,12 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 from .constants import API_URL, MODEL_NAME
 from .model_info import custom_model_info
-from .private_api import SECRET_TOKEN
 
 
 async def autogen_test():
     model_client = OpenAIChatCompletionClient(
         model=MODEL_NAME,
-        api_key=SECRET_TOKEN,
+        api_key="",
         base_url=API_URL,
         model_info=custom_model_info,
     )
