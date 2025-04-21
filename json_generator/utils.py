@@ -31,7 +31,7 @@ class ClarifierSchema(BaseModel):
         description="Список пропущенных полей для генерации. Может быть "
         "пустым, если все поля присутствуют.",
     )
-    mentioned_params: List[Dict[str, Any]] = Field(
+    mentioned_params: Dict[str, Any] = Field(
         ...,
         description="Список полей, которые"
         " были заполнены в сообщении пользователя. ",

@@ -130,9 +130,10 @@ class ChatManager:
                 "message": "Произошла внутренняя ошибка, попробуйте снова",
                 "json_schema": "",
             }
+        logging.info("полный ответ" + str(json_result))
         session.set_missing(json_result["missing"])
-        for i in json_result["mentioned_params"]:
-            session.add_collected_param(i[0], i[1])
+        for field, desc in json_result["mentioned_params"].items():
+            session.add_collected_param(field, desc)
         if not json_result["can_generate_schema"]:
             # session.awaiting_clarification = True
             return {"message": json_result["message"], "json_schema": ""}
@@ -173,18 +174,18 @@ class ChatManager:
 
         chat_text = self._extract_content(chat_result)
         tool_extract = self._extract_tool_responses(chat_result)
-        required_field = self.get_required_fields(
-            parameters=json.loads(tool_extract),
-            parent_path="",
+        required_prompt = self.get_required_fields(
+            tool_extract,
         )
-        required_prompt = self._generate_missing_params_prompt(
-            required_fields=required_field,
-        )
+        # required_prompt = self._generate_missing_params_prompt(
+        #     required_fields=required_field,
+        # )
         logging.info("required prompt " + required_prompt)
         session.update_with_bd_context(bd_context=tool_extract)
         prompt = CLARIFY_JSON_TASK + chat_text + required_prompt
+        logging.info("MEssage for final solution " + prompt)
         raw_answer = generate(
-            prompt,
+            "Предыдущие сообщения пользователя: " + history + prompt,
             model=self.model_name,
             system_prompt=SYSTEM_CLARIFIER_WITHOUT_TERMINATE,
             json_schema=ClarifierSchema.model_json_schema(),
@@ -273,7 +274,7 @@ class ChatManager:
                     logging.error("Все попытки подключения к API исчерпаны")
                     raise
 
-    def _generate_missing_params_prompt(self, required_fields: list) -> str:
+    def _generate_missing_params_prompt(self, required_fields: Dict) -> str:
         """
         Генерирует строку с описанием недостающих параметров на основе извлеченного контента.
 
@@ -285,47 +286,119 @@ class ChatManager:
         """
 
         prompt_lines = ["Список необходимых параметров:"]
-        for field, desc in required_fields:
+        for field, desc in required_fields.items():
             prompt_lines.append(f"- Поле: {field}")
             prompt_lines.append(f"  Описание: {desc}")
 
         return "\n".join(prompt_lines)
 
-    def get_required_fields(self, parameters, parent_path=""):
-        required = []
-        if not isinstance(parameters, dict):
-            logging.error(
-                f"Invalid parameters type: {type(parameters)}. Expected dict."
-            )
-            return required
+    def get_required_fields(self, schema: str) -> str:
+        prompt = "Вот пример, как нужно выписать переменные."
+        example = """type (обязательно) — тип Workflow (WF), например: complex, await_for_message, rest_call и др.
+name (обязательно) — уникальное имя WF.
+tenantId (опционально) — идентификатор системы, использующей WF.
+version (опционально) — номер версии WF.
+description (опционально) — короткое описание функциональности WF.
+compiled (обязательно, если type равен 'complex')
+start (обязательно) — уникальный идентификатор начальной активности (activity) в составе сложного WF.
+activities (обязательно) — массив структурированных действий (активностей), выполняемых в рамках WF.
+outputTemplate (опционально) — шаблон фильтрации выходных данных.
+details (обязательно, если type не равен 'complex')*
+inputValidateSchema (опционально) — JSON-схема для валидации входных данных.
+outputValidateSchema (опционально) — JSON-схема для валидации выходных данных.
+starters (обязательно) — параметры для инициирования выполнения WF.
+sendToKafkaConfig (обязательно, если type равен 'send_to_kafka') — конфигурационные данные для интеграции с Apache Kafka.
+sendToS3Config (обязательно, если type равен 'send_to_s3') — конфигурационные данные для взаимодействия с Amazon S3.
+restCallConfig (обязательно, если type равен 'rest_call') — конфигурация для REST-запросов.
+xsltTransformConfig (обязательно, если type равен 'xslt_transform') — конфигурация для трансформации XML/XSLT.
+databaseCallConfig (обязательно, если type равен 'db_call') — конфигурация SQL-запросов к базам данных.
+sendToRabbitmqConfig (обязательно, если type равен 'send_to_rabbitmq') — конфигурация для отправки сообщений в RabbitMQ.
+awaitForMessageConfig (обязательно, если type равен 'await_for_message') — конфигурация ожиданий входящих сообщений.
+sendToSapConfig (обязательно, если type равен 'send_to_sap') — конфигурация интеграционных соединений с системой SAP.
+flowEditorConfig (опционально) — вспомогательная информация, предназначенная исключительно для визуального редактора и не оказывающая влияния на исполнение самого workflow."""
+        prompt = (
+            prompt + example + ". Тебе нужно из Json файла в таком же формате выписать"
+            "все поля, которые отмечены required как обязательные вместе с их описанием. Json: "
+            + schema
+        )
+        return self._generate_with_retry(
+            prompt,
+            system_prompt="Ты специалист по json схемам.",
+            model=self.model_name,
+        )
 
-        for param, config in parameters.items():
-            # Skip non-dict configs
-            if not isinstance(config, dict):
-                logging.warning(
-                    f"Skipping param '{param}': invalid config type {type(config)}. Value: {config}"
-                )
-                continue
-
-            # Build the full path for nested parameters
-            current_path = f"{parent_path}.{param}" if parent_path else param
-
-            # Check if this parameter is required (always or conditionally)
-            is_required = config.get("required", False) or ("required_cond" in config)
-            if is_required:
-                description = config.get("description", "No description")
-                # Append conditional note if applicable
-                if "required_cond" in config:
-                    description += f" (Condition: {config['required_cond']})"
-                required.append((current_path, description))
-
-            # Recurse into subcomponents if they exist
-            subcomponents = config.get("subcomponents")
-            if isinstance(subcomponents, dict):
-                required.extend(self.get_required_fields(subcomponents, current_path))
-            elif subcomponents is not None:
-                logging.warning(
-                    f"Skipping subcomponents for '{param}': invalid type {type(subcomponents)}"
-                )
-
-        return required
+    # def get_required_fields(schema: Dict[str, Any]) -> Dict[str, str]:
+    #     """
+    #     Recursively extract all required fields from a JSON schema.
+    #
+    #     Args:
+    #         schema (Dict[str, Any]): The JSON schema containing definitions with nested parameters and subcomponents.
+    #
+    #     Returns:
+    #         Dict[str, str]: A mapping where keys are dot-separated paths to required fields,
+    #                         and values are their descriptions.
+    #     """
+    #     logging.info("Starting extraction of required fields")
+    #     required_fields: Dict[str, str] = {}
+    #
+    #     def traverse(node: Any, path: List[str]):
+    #         logging.debug("Traversing path %s with node type %s", path, type(node).__name__)
+    #         # Only process dictionaries
+    #         if not isinstance(node, dict):
+    #             logging.debug("Skipping non-dict node at %s: %r", path, node)
+    #             return
+    #
+    #         # Validate required and description
+    #         if 'required' in node and 'description' in node:
+    #             if node.get('required') is True:
+    #                 field_path = '.'.join(path)
+    #                 required_fields[field_path] = node['description']
+    #                 logging.debug("Found required field: %s -> %s", field_path, node['description'])
+    #             else:
+    #                 logging.debug("Field at %s marked required=False", path)
+    #         else:
+    #             if 'required' in node:
+    #                 logging.warning("Node at %s missing description", path)
+    #             if 'description' in node:
+    #                 logging.warning("Node at %s missing required flag", path)
+    #
+    #         # Recurse into nested parameters and subcomponents
+    #         for child_key in ('parameters', 'subcomponents'):
+    #             if child_key in node:
+    #                 child_group = node[child_key]
+    #                 if isinstance(child_group, dict):
+    #                     logging.debug("Descending into '%s' at %s", child_key, path)
+    #                     for name, child_node in child_group.items():
+    #                         traverse(child_node, path + [name])
+    #                 else:
+    #                     logging.warning(
+    #                         "Expected dict for '%s' at %s but got %s",
+    #                         child_key,
+    #                         path,
+    #                         type(child_group).__name__
+    #                     )
+    #
+    #     # Validate top-level schema
+    #     if not isinstance(schema, dict):
+    #         logging.error("Schema root is not a dict: %r", schema)
+    #         raise ValueError("Schema must be a dictionary of definitions.")
+    #
+    #     # Iterate top-level definitions
+    #     for entry_name, entry_def in schema.items():
+    #         logging.debug("Processing top-level entry: %s (type: %s)", entry_name, type(entry_def).__name__)
+    #         if not isinstance(entry_def, dict):
+    #             logging.warning("Skipping entry '%s': not a dict", entry_name)
+    #             continue
+    #         params = entry_def.get('parameters')
+    #         if not isinstance(params, dict):
+    #             logging.warning(
+    #                 "Entry '%s' has no 'parameters' dict or it is not a dict (type: %s)",
+    #                 entry_name,
+    #                 type(params).__name__
+    #             )
+    #             continue
+    #         for name, param_node in params.items():
+    #             traverse(param_node, [entry_name, name])
+    #
+    #     logging.info("Extraction complete: found %d required fields", len(required_fields))
+    #     return required_fields
