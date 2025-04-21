@@ -198,7 +198,7 @@ class ChatManager:
                 )
 
             chat_text = self._extract_content(chat_result)
-        if session.awaiting_clarification:
+        if session.awaiting_clarification or session.bd_context != "":
             tool_extract = session.bd_context
         else:
             tool_extract = self._extract_tool_responses(chat_result)
