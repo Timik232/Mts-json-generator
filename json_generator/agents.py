@@ -1,6 +1,7 @@
 """Файл с реализацией системы агентов для работы программы"""
 import json
 import logging
+import re
 import time
 from typing import Annotated, Any, Dict, List
 
@@ -27,6 +28,16 @@ from .sessions import SessionContext
 from .utils import SECRET_TOKEN, ClarifierSchema, generate
 
 configure_logging()
+
+
+def extract_braces(answer: str) -> str:
+    """
+    Возвращает подстроку от первого '{' до первого '}' после него включительно.
+    Если ни одной пары скобок не найдено, вернёт исходную строку.
+    """
+    match = re.search(r"\{.*?\}", answer, re.DOTALL)
+    return match.group(0) if match else answer
+
 
 logging.debug("Инициализация OpenAIChatCompletionClient")
 
@@ -134,12 +145,21 @@ class ChatManager:
             session.add_collected_param(field, desc)
         if not json_result["can_generate_schema"]:
             # session.awaiting_clarification = True
-            return {"message": json_result["message"], "json_schema": ""}
+            session.update_with_user(json_result["message"])
+            return {
+                "message": "Отсутствующие поля:"
+                + ", ".join(json_result["missing"])
+                + json_result["message"],
+                "json_schema": "",
+            }
         else:
+            schema = ""
+            if not (session.current_schema is None):
+                schema = "текущая схема: " + str(session.current_schema)
             try:
                 print(session.bd_context)
                 answer = self._generate_with_retry(  # Изменено на метод с retry
-                    JSON_TASK + " ".join(session.get_messages()),
+                    schema + JSON_TASK + " ".join(session.get_messages()),
                     system_prompt=SYSTEM_JSON_CREATOR,
                     model=self.model_name,
                     json_schema=json.loads(session.bd_context),
@@ -147,18 +167,17 @@ class ChatManager:
             except Exception:
                 logging.warning("Json schema не валидна")
                 answer = self._generate_with_retry(  # Изменено на метод с retry
-                    JSON_TASK
+                    schema
+                    + JSON_TASK
                     + " ".join(session.get_messages())
                     + "В ответе должен быть только Json, без ``` и других подобных символов. Схема: "
                     + session.bd_context,
                     system_prompt=SYSTEM_JSON_CREATOR,
                     model=self.model_name,
                 )
-                left_trimmed = answer.lstrip().lstrip(lambda x: x != "{")
-                right_trimmed = left_trimmed.rstrip().rstrip(lambda x: x != "}")
-
-                final_result = right_trimmed.strip()
-                answer = final_result
+                trimmed = extract_braces(answer)
+                answer = trimmed
+            session.current_schema = answer
             return {"message": "Полученная схема", "json_schema": answer}
 
     def _detect_missing_params(self, session: SessionContext) -> str:
@@ -192,10 +211,16 @@ class ChatManager:
         required_prompt = self.get_required_fields(
             tool_extract,
         )
-        print(2)
         logging.info("required prompt " + required_prompt)
         session.update_with_bd_context(bd_context=tool_extract)
-        prompt = CLARIFY_JSON_TASK + chat_text if chat_text else "" + required_prompt
+        schema = ""
+        if not (session.current_schema is None):
+            schema = "текущая схема" + str(session.current_schema)
+        prompt = (
+            schema + required_prompt + CLARIFY_JSON_TASK + chat_text
+            if chat_text
+            else ""
+        )
         logging.info("MEssage for final solution " + prompt)
         raw_answer = generate(
             "Предыдущие сообщения пользователя и уже введённые поля: " + msg + prompt,

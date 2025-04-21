@@ -114,11 +114,13 @@ def generate(
             response = client.chat.completions.create(
                 messages=request_messages,
                 model=model,
+                temperature=0.4,
             )
         else:
             response = client.chat.completions.create(
                 messages=request_messages,
                 model=model,
+                temperature=0.4,
                 response_format={
                     "type": "json_schema",
                     "json_schema": {
