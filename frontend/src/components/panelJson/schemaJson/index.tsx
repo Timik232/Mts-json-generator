@@ -64,12 +64,8 @@ export default function SchemaJson({ json }: Props) {
         </div>
       </div>
       <div className={Style.Block}>
-        {json !== null && (
-          <>
-            <Lines count={countJsonStringLines(json)} />
-            <Code text={json} />
-          </>
-        )}
+        <Lines count={countJsonStringLines(json === null ? '...' : json)} />
+        <Code text={json === null ? '...' : json} />
       </div>
     </div>
   );

@@ -9,6 +9,10 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+/archive.zip
+/archive
+archive.zip
+archive
 
 # testing
 /coverage
