@@ -11,7 +11,6 @@ class SessionContext:
         self.collected_params: Dict[str, Any] = {}
         self.missing_fields: List[str] = []
         self.bd_context: str = ""
-        self.model_type: str = ""
         self.current_schema: Optional[dict] = None
         self.awaiting_clarification: bool = False
 
@@ -25,10 +24,12 @@ class SessionContext:
             history.append(i)
         return history
 
-    def update_with_bd_context(self, bd_context: str, model_type: str):
+    def update_with_bd_context(
+        self,
+        bd_context: str,
+    ):
         """Обновляет контекст базы данных."""
         self.bd_context = bd_context
-        self.model_type = model_type
 
     def update_with_user(self, message: str):
         """Добавляет сообщение в сессию."""
@@ -52,7 +53,6 @@ class SessionContext:
         """Очищает данные сессии."""
         self.messages.clear()
         self.bd_context = ""
-        self.model_type = ""
         self.collected_params.clear()
         self.missing_fields.clear()
         self.current_schema = None

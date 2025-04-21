@@ -2,7 +2,7 @@
 import json
 import logging
 import time
-from typing import Annotated, Any, Dict, Tuple
+from typing import Annotated, Any, Dict
 
 from autogen import Cache, ConversableAgent
 from autogen_agentchat.agents import AssistantAgent
@@ -69,7 +69,8 @@ clarification_agent = ConversableAgent(
 user_proxy = ConversableAgent(
     name="User",
     llm_config=False,
-    is_termination_msg=lambda msg: msg.get("content") is not None
+    is_termination_msg=lambda msg: isinstance(msg, dict)
+    and msg.get("content") is not None
     and "TERMINATE" in msg["content"],
     max_consecutive_auto_reply=10,
     human_input_mode="NEVER",
@@ -84,15 +85,14 @@ def retrieve_documents(
         "Запрос к RAG системе для получения документации с указанием"
         "необходимой темы",
     ],
-) -> Tuple[str, str]:
+) -> str:
     """Получить документ json-schema из бд"""
     if isinstance(query, dict) and "query" in query:
         query = str(query["query"])
     query = str(query)
     answer = retriever.hybrid_search(query=query)
-    key = answer[0]["metadata"]["original_key"]
     docs = answer[0]["metadata"]["original_value"]
-    return key, docs
+    return docs
 
 
 logging.info("Агенты schema_generator и clarifier готовы")
@@ -134,10 +134,11 @@ class ChatManager:
         for i in json_result["mentioned_params"]:
             session.add_collected_param(i[0], i[1])
         if not json_result["can_generate_schema"]:
-            session.awaiting_clarification = True
+            # session.awaiting_clarification = True
             return {"message": json_result["message"], "json_schema": ""}
         else:
             try:
+                print(session.bd_context)
                 answer = self._generate_with_retry(  # Изменено на метод с retry
                     JSON_TASK + " ".join(session.get_messages()),
                     system_prompt=SYSTEM_JSON_CREATOR,
@@ -173,23 +174,15 @@ class ChatManager:
         chat_text = self._extract_content(chat_result)
         tool_extract = self._extract_tool_responses(chat_result)
         required_field = self.get_required_fields(
-            parameters=json.loads(tool_extract[1]),
+            parameters=json.loads(tool_extract),
             parent_path="",
         )
         required_prompt = self._generate_missing_params_prompt(
             required_fields=required_field,
         )
-        session.update_with_bd_context(
-            bd_context=tool_extract[1], model_type=tool_extract[0]
-        )
-        prompt = (
-            CLARIFY_JSON_TASK
-            + "рассматриваем составляющую  "
-            + tool_extract[0]
-            + " для workflow. "
-            + chat_text
-            + required_prompt
-        )
+        logging.info("required prompt " + required_prompt)
+        session.update_with_bd_context(bd_context=tool_extract)
+        prompt = CLARIFY_JSON_TASK + chat_text + required_prompt
         raw_answer = generate(
             prompt,
             model=self.model_name,
@@ -208,7 +201,7 @@ class ChatManager:
         Извлекает содержимое из сообщения ассистента, пропуская инструменты (tool calls/responses)
         """
         history = []
-
+        logging.info("Content extraction")
         for msg in task_result.chat_history:
             # Пропускаем системные сообщения и сообщения от инструментов
             if msg.get("role") in ["tool", "system"]:
@@ -234,58 +227,23 @@ class ChatManager:
 
         return "\n".join(history)
 
-    # def _extract_content(self, task_result: dict | Any) -> str:
-    #     """
-    #     Извлекает содержимое из сообщения ассистента
-    #     """
-    #     history = []
-    #
-    #     for msg in task_result.chat_history:
-    #         entry = []
-    #
-    #         # Базовая информация
-    #         role = msg.get("role", "unknown")
-    #         name = msg.get("name", "unknown")
-    #         content = msg.get("content")
-    #
-    #         # Заголовок сообщения
-    #         header = f"[{role.upper()}"
-    #         if name and name != role:
-    #             header += f" ({name})"
-    #         header += "]"
-    #
-    #         # Обработка разных типов сообщений
-    #         if role == "assistant" and msg.get("tool_calls"):
-    #             for call in msg["tool_calls"]:
-    #                 func = call["function"]
-    #                 entry.append(f"{header} CALL {func['name']}: {func['arguments']}")
-    #
-    #         elif role == "tool" and msg.get("tool_responses"):
-    #             for response in msg["tool_responses"]:
-    #                 entry.append(f"{header} RESPONSE: {response['content']}")
-    #
-    #         elif content:
-    #             entry.append(f"{header}: {content.strip()}")
-    #
-    #         if entry:
-    #             history.extend(entry)
-    #
-    #     return "\n".join(history)
-
     def _extract_tool_responses(self, chat_result: dict | Any) -> str:
         """Извлекает последний ответ от инструментов (tool responses) из истории чата"""
+        logging.info("Tool response extraction")
         for msg in reversed(chat_result.chat_history):
             if msg.get("role") == "tool" and msg.get("tool_responses"):
                 # Берем последний ответ из списка tool_responses
                 last_response = msg["tool_responses"][-1]
                 if last_response["content"] and last_response["content"].strip() != "":
+                    answer = last_response["content"]
+                    print(type(answer))
                     print("____________1___________")
-                    print(last_response["content"])
+                    print(answer)
                     try:
-                        json.loads(last_response["content"][1])
+                        json.loads(answer)
                     except json.JSONDecodeError:
                         logging.error("Cant decode")
-                    return last_response["content"]
+                    return answer
         return ""
 
     def _generate_with_retry(self, *args, **kwargs) -> Any:
@@ -335,7 +293,18 @@ class ChatManager:
 
     def get_required_fields(self, parameters, parent_path=""):
         required = []
+        if not isinstance(parameters, dict):
+            logging.error(
+                f"Invalid parameters type: {type(parameters)}. Expected dict."
+            )
+            return required
+
         for param, config in parameters.items():
+            if not isinstance(config, dict):
+                logging.warning(
+                    f"Skipping param '{param}': invalid config type {type(config)}. Value: {config}"
+                )
+                continue
             current_path = f"{parent_path}.{param}" if parent_path else param
 
             # Проверяем, является ли текущий параметр обязательным
@@ -345,6 +314,13 @@ class ChatManager:
 
             # Рекурсивно проверяем подкомпоненты
             if "subcomponents" in config:
+                subcomponents = config.get("subcomponents")
+                if subcomponents:
+                    if not isinstance(subcomponents, dict):
+                        logging.warning(
+                            f"Skipping subcomponents for '{param}': invalid type {type(subcomponents)}"
+                        )
+                        continue
                 sub_required = self.get_required_fields(
                     config["subcomponents"], current_path
                 )
