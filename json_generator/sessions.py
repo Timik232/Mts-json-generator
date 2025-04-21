@@ -64,3 +64,11 @@ class SessionContext:
         Если ключ уже существует, перезаписывает его новым значением.
         """
         self.collected_params[key] = value
+
+    def get_collected_params_as_str(self) -> str:
+        """
+        Возвращает все собранные параметры в виде удобочитаемой строки вида:
+        "param_name1=value1\nparam_name2=value2\n..."
+        """
+        params_str = "\n".join([f"{k}: {v}" for k, v in self.collected_params.items()])
+        return params_str

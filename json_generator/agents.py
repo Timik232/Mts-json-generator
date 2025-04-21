@@ -2,7 +2,7 @@
 import json
 import logging
 import time
-from typing import Annotated, Any, Dict
+from typing import Annotated, Any, Dict, List
 
 from autogen import Cache, ConversableAgent
 from autogen_agentchat.agents import AssistantAgent
@@ -28,10 +28,8 @@ from .utils import SECRET_TOKEN, ClarifierSchema, generate
 
 configure_logging()
 
-# Инициализация LLM клиента
 logging.debug("Инициализация OpenAIChatCompletionClient")
 
-# Инициализация ретривера
 retriever = get_retriever()
 logging.debug("SimpleRetrievalAgent инициализирован")
 
@@ -156,36 +154,51 @@ class ChatManager:
                     system_prompt=SYSTEM_JSON_CREATOR,
                     model=self.model_name,
                 )
+                left_trimmed = answer.lstrip().lstrip(lambda x: x != "{")
+                right_trimmed = left_trimmed.rstrip().rstrip(lambda x: x != "}")
+
+                final_result = right_trimmed.strip()
+                answer = final_result
             return {"message": "Полученная схема", "json_schema": answer}
 
     def _detect_missing_params(self, session: SessionContext) -> str:
         """проверить, каких параметров не хватает или всех хватает"""
+        chat_text = None
         history = session.get_messages()
-        history.append(CLARIFIER_TASK)
-        history = " ".join(history)
-        with Cache.disk() as cache:
-            chat_result = user_proxy.initiate_chat(
-                clarification_agent,
-                message=history,
-                max_turns=2,
-                summary_method="reflection_with_llm",
-                cache=cache,
-            )
+        buf = history.copy()
+        buf.append(CLARIFIER_TASK)
+        msg = " ".join(buf)
+        if session.bd_context == "":
+            with Cache.disk() as cache:
+                chat_result = user_proxy.initiate_chat(
+                    clarification_agent,
+                    message=msg,
+                    max_turns=2,
+                    summary_method="reflection_with_llm",
+                    cache=cache,
+                )
 
-        chat_text = self._extract_content(chat_result)
-        tool_extract = self._extract_tool_responses(chat_result)
+            chat_text = self._extract_content(chat_result)
+        if session.awaiting_clarification:
+            tool_extract = session.bd_context
+        else:
+            tool_extract = self._extract_tool_responses(chat_result)
+        if session.awaiting_clarification:
+            buf = history.copy()
+            buf.append(session.get_collected_params_as_str())
+            msg = "\n".join(buf)
+            session.clear_missing()
+
         required_prompt = self.get_required_fields(
             tool_extract,
         )
-        # required_prompt = self._generate_missing_params_prompt(
-        #     required_fields=required_field,
-        # )
+        print(2)
         logging.info("required prompt " + required_prompt)
         session.update_with_bd_context(bd_context=tool_extract)
-        prompt = CLARIFY_JSON_TASK + chat_text + required_prompt
+        prompt = CLARIFY_JSON_TASK + chat_text if chat_text else "" + required_prompt
         logging.info("MEssage for final solution " + prompt)
         raw_answer = generate(
-            "Предыдущие сообщения пользователя: " + history + prompt,
+            "Предыдущие сообщения пользователя и уже введённые поля: " + msg + prompt,
             model=self.model_name,
             system_prompt=SYSTEM_CLARIFIER_WITHOUT_TERMINATE,
             json_schema=ClarifierSchema.model_json_schema(),
@@ -327,78 +340,90 @@ flowEditorConfig (опционально) — вспомогательная и�
             model=self.model_name,
         )
 
-    # def get_required_fields(schema: Dict[str, Any]) -> Dict[str, str]:
-    #     """
-    #     Recursively extract all required fields from a JSON schema.
-    #
-    #     Args:
-    #         schema (Dict[str, Any]): The JSON schema containing definitions with nested parameters and subcomponents.
-    #
-    #     Returns:
-    #         Dict[str, str]: A mapping where keys are dot-separated paths to required fields,
-    #                         and values are their descriptions.
-    #     """
-    #     logging.info("Starting extraction of required fields")
-    #     required_fields: Dict[str, str] = {}
-    #
-    #     def traverse(node: Any, path: List[str]):
-    #         logging.debug("Traversing path %s with node type %s", path, type(node).__name__)
-    #         # Only process dictionaries
-    #         if not isinstance(node, dict):
-    #             logging.debug("Skipping non-dict node at %s: %r", path, node)
-    #             return
-    #
-    #         # Validate required and description
-    #         if 'required' in node and 'description' in node:
-    #             if node.get('required') is True:
-    #                 field_path = '.'.join(path)
-    #                 required_fields[field_path] = node['description']
-    #                 logging.debug("Found required field: %s -> %s", field_path, node['description'])
-    #             else:
-    #                 logging.debug("Field at %s marked required=False", path)
-    #         else:
-    #             if 'required' in node:
-    #                 logging.warning("Node at %s missing description", path)
-    #             if 'description' in node:
-    #                 logging.warning("Node at %s missing required flag", path)
-    #
-    #         # Recurse into nested parameters and subcomponents
-    #         for child_key in ('parameters', 'subcomponents'):
-    #             if child_key in node:
-    #                 child_group = node[child_key]
-    #                 if isinstance(child_group, dict):
-    #                     logging.debug("Descending into '%s' at %s", child_key, path)
-    #                     for name, child_node in child_group.items():
-    #                         traverse(child_node, path + [name])
-    #                 else:
-    #                     logging.warning(
-    #                         "Expected dict for '%s' at %s but got %s",
-    #                         child_key,
-    #                         path,
-    #                         type(child_group).__name__
-    #                     )
-    #
-    #     # Validate top-level schema
-    #     if not isinstance(schema, dict):
-    #         logging.error("Schema root is not a dict: %r", schema)
-    #         raise ValueError("Schema must be a dictionary of definitions.")
-    #
-    #     # Iterate top-level definitions
-    #     for entry_name, entry_def in schema.items():
-    #         logging.debug("Processing top-level entry: %s (type: %s)", entry_name, type(entry_def).__name__)
-    #         if not isinstance(entry_def, dict):
-    #             logging.warning("Skipping entry '%s': not a dict", entry_name)
-    #             continue
-    #         params = entry_def.get('parameters')
-    #         if not isinstance(params, dict):
-    #             logging.warning(
-    #                 "Entry '%s' has no 'parameters' dict or it is not a dict (type: %s)",
-    #                 entry_name,
-    #                 type(params).__name__
-    #             )
-    #             continue
-    #         for name, param_node in params.items():
-    #             traverse(param_node, [entry_name, name])
-    #
-    #     logging.info("Extraction complete: found %d required fields", len(required_fields))
-    #     return required_fields
+    def another_get_required_fields(self, schema: Dict[str, Any]) -> Dict[str, str]:
+        """
+        Recursively extract all required fields from a JSON schema.
+
+        Args:
+            schema (Dict[str, Any]): The JSON schema containing definitions with nested parameters and subcomponents.
+
+        Returns:
+            Dict[str, str]: A mapping where keys are dot-separated paths to required fields,
+                            and values are their descriptions.
+        """
+        logging.info("Starting extraction of required fields")
+        required_fields: Dict[str, str] = {}
+
+        def traverse(node: Any, path: List[str]):
+            logging.debug(
+                "Traversing path %s with node type %s", path, type(node).__name__
+            )
+            # Only process dictionaries
+            if not isinstance(node, dict):
+                logging.debug("Skipping non-dict node at %s: %r", path, node)
+                return
+
+            # Validate required and description
+            if "required" in node and "description" in node:
+                if node.get("required") is True:
+                    field_path = ".".join(path)
+                    required_fields[field_path] = node["description"]
+                    logging.debug(
+                        "Found required field: %s -> %s",
+                        field_path,
+                        node["description"],
+                    )
+                else:
+                    logging.debug("Field at %s marked required=False", path)
+            else:
+                if "required" in node:
+                    logging.warning("Node at %s missing description", path)
+                if "description" in node:
+                    logging.warning("Node at %s missing required flag", path)
+
+            # Recurse into nested parameters and subcomponents
+            for child_key in ("parameters", "subcomponents"):
+                if child_key in node:
+                    child_group = node[child_key]
+                    if isinstance(child_group, dict):
+                        logging.debug("Descending into '%s' at %s", child_key, path)
+                        for name, child_node in child_group.items():
+                            traverse(child_node, path + [name])
+                    else:
+                        logging.warning(
+                            "Expected dict for '%s' at %s but got %s",
+                            child_key,
+                            path,
+                            type(child_group).__name__,
+                        )
+
+        # Validate top-level schema
+        if not isinstance(schema, dict):
+            logging.error("Schema root is not a dict: %r", schema)
+            raise ValueError("Schema must be a dictionary of definitions.")
+
+        # Iterate top-level definitions
+        for entry_name, entry_def in schema.items():
+            logging.debug(
+                "Processing top-level entry: %s (type: %s)",
+                entry_name,
+                type(entry_def).__name__,
+            )
+            if not isinstance(entry_def, dict):
+                logging.warning("Skipping entry '%s': not a dict", entry_name)
+                continue
+            params = entry_def.get("parameters")
+            if not isinstance(params, dict):
+                logging.warning(
+                    "Entry '%s' has no 'parameters' dict or it is not a dict (type: %s)",
+                    entry_name,
+                    type(params).__name__,
+                )
+                continue
+            for name, param_node in params.items():
+                traverse(param_node, [entry_name, name])
+
+        logging.info(
+            "Extraction complete: found %d required fields", len(required_fields)
+        )
+        return required_fields
