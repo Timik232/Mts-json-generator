@@ -151,7 +151,7 @@ class ChatManager:
                 answer = self._generate_with_retry(  # Изменено на метод с retry
                     JSON_TASK
                     + " ".join(session.get_messages())
-                    + "Схема: "
+                    + "В ответе должен быть только Json, без ``` и других подобных символов. Схема: "
                     + session.bd_context,
                     system_prompt=SYSTEM_JSON_CREATOR,
                     model=self.model_name,
