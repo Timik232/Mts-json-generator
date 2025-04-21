@@ -1,0 +1,12 @@
+.Code
+{
+  padding: 8px;
+  background-color: var(--background-second);
+  > p
+  {
+    font-weight: normal;
+    font-size: 16px;
+    color: var(--text-first);
+    white-space: pre-wrap;
+  }
+}

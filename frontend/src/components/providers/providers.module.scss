@@ -1,0 +1,33 @@
+@property --color-gradient-start {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #ff919b; //#ffc4cf
+}
+
+@property --color-gradient-end {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #e0dff1;
+}
+
+.Providers {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 0;
+  transition: --color-gradient-start 300ms, --color-gradient-end 300ms;
+  background-image: linear-gradient(126.67deg, var(--color-gradient-start) -114.89%, var(--color-gradient-end) 126.68%);
+
+  :global(html.dark) & {
+    --color-gradient-start: #6943B7;
+    --color-gradient-end: #010D19;
+  }
+
+  :global(html.light) & {
+    --color-gradient-start: #ffb9bf;
+    --color-gradient-end: #F6F8F9;
+  }
+}

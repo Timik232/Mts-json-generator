@@ -1,0 +1,35 @@
+.messageClient
+{
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 8px;
+  > div
+  {
+    width: 85%;
+    padding: 16px;
+    border-radius: 16px 16px 0 16px;
+    background: var(--button-background-primary);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 8px;
+    > h4 {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--button-text-primary);
+      width: 100%;
+      text-align: left;
+    }
+    > p {
+      font-size: 16px;
+      font-weight: normal;
+      color: var(--button-text-primary);
+      width: 100%;
+      text-align: left;
+    }
+  }
+}

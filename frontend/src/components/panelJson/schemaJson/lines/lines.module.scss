@@ -1,0 +1,15 @@
+.Lines
+{
+  padding: 8px;
+  background-color: var(--background-first);
+  min-height: 100%;
+  border-right: 1px solid var(--border-color);
+  > h4
+  {
+    text-align: right;
+    font-weight: bold;
+    font-size: 16px;
+    color: var(--text-first);
+    white-space: pre-line;
+  }
+}

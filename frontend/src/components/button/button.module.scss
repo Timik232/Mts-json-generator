@@ -1,0 +1,60 @@
+.Button {
+  padding: 8px 16px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: 300ms box-shadow, 300ms background-color, 300ms border;
+  cursor: pointer;
+  > p {
+    font-size: 14px;
+    font-weight: 600;
+    ransition: 300ms color;
+  }
+}
+
+.Primary
+{
+  box-shadow: inset 0 var(--button-shadow-postion-y-primary) var(--button-shadow-blur-primary) var(--button-shadow-color-primary);
+  background-color: var(--button-background-primary);
+  border: 1px solid var(--button-border-primary);
+  &:active, &:focus {
+    border: 1px solid var(--button-border-primary);
+  }
+  > p {
+    color: var(--button-text-primary)
+  }
+}
+
+.DisabledPrimary
+{
+  opacity: 0.5;
+  cursor: default;
+}
+
+.Default
+{
+  box-shadow: inset 0 var(--button-shadow-postion-y-default) var(--button-shadow-blur-default) var(--button-shadow-color-default);
+  background-color: var(--button-background-default);
+  border: 1px solid var(--button-border-default);
+  &:active, &:focus {
+    border: 1px solid var(--button-border-default);
+  }
+  > p {
+    color: var(--button-text-default)
+  }
+}
+
+.NoActive
+{
+  box-shadow: inset 0 var(--button-shadow-postion-y-default) var(--button-shadow-blur-default) var(--button-shadow-color-default);
+  background-color: rgba(0,0,0,0);
+  border: 1px solid rgba(0,0,0,0);
+  &:active, &:focus {
+    border: 1px solid rgba(0,0,0,0);
+  }
+  > p {
+    color: var(--button-text-noActive)
+  }
+}

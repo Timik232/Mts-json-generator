@@ -1,0 +1,48 @@
+.SegmentedField {
+  width: auto;
+  height: 40px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-end;
+  gap: 4px;
+  > button {
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    transition: 300ms;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    > p
+    {
+      font-size: 14px;
+      transition: 300ms;
+    }
+  }
+}
+
+.Active
+{
+  height: 40px;
+  background-color: var(--background-first);
+  padding: 10px 16px;
+  > p
+  {
+    font-weight: 500;
+    color: var(--button-background-primary);
+  }
+}
+
+.NoActive
+{
+  height: 36px;
+  background-color: var(--button-background-no-active);
+  padding: 8px 16px;
+  > p
+  {
+    font-weight: 400;
+    color: var(--text-primary-text);
+  }
+}

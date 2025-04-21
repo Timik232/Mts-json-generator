@@ -1,0 +1,76 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  transition: 300ms background-color, 300ms border, 300ms color;
+}
+
+button:active, button:focus {
+  border: none;
+  outline: none;
+}
+
+html, body {
+  overflow: hidden;
+}
+
+textarea {
+  border: none;
+  overflow: auto;
+  outline: none;
+
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+
+  resize: none;
+  font-family: Inter;
+}
+
+:root {
+  /* Light theme variables */
+  --border-color: rgba(14,37,60,0.2);
+  --background-first: #FFFFFF;
+  --background-second: #F6F8F9;
+  --background-modal: #EEEEEE;
+  --text-first: #0E253C;
+  --text-second: rgba(14,37,60,0.85);
+
+  --button-background-default: #FFFFFF;
+  --button-border-default: rgba(14,37,60,0.2);
+  --button-text-default: #0E253C;
+
+  --button-text-noActive: rgba(14,37,60,0.85);
+  --button-background-primary: #f41e34;
+  --button-background-no-active: #F6F8F9;
+
+  --button-border-primary: rgba(0,0,0,0);
+  --button-text-primary: #FFFFFF;
+
+  --button-shadow-blur-default: 0;
+  --button-shadow-postion-y-default: 0;
+  --button-shadow-color-default: rgba(0,0,0,0);
+
+  --button-shadow-blur-primary: 2px;
+  --button-shadow-postion-y-primary: -2px;
+  --button-shadow-color-primary: rgba(0,0,0,0.15);
+}
+
+/* Forced dark theme */
+html.dark {
+  --border-color: rgba(255,255,255,0.2);
+  --background-first: #001121;
+  --background-second: #010D19;
+  --background-modal: #112232;
+  --text-first: #FFFFFF;
+  --text-second: rgba(255,255,255,0.8);
+  --text-primary-text: rgba(255,255,255,0.8);
+
+  --button-background-default: #001121;
+  --button-border-default: rgba(255,255,255,0.2);
+  --button-text-default: #FFFFFF;
+
+  --button-text-noActive: rgba(255,255,255,0.8);
+  --button-background-primary: #8378FF;
+  --button-background-no-active: #010D19;
+}

@@ -1,0 +1,10 @@
+.Blocks
+{
+  width: 100%;
+  height: calc(100vh - 64px);
+  padding: 16px 16px 96px;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  grid-gap: 16px;
+}

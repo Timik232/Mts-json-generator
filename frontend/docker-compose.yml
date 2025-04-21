@@ -1,0 +1,11 @@
+services:
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      CHAT: https://matcher.ser13volk.me/chat
+      CLEAR: https://matcher.ser13volk.me/clear
+    ports:
+      - "3000:3000"
+    restart: always

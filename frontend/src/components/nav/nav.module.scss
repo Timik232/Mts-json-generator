@@ -1,0 +1,12 @@
+.Nav
+{
+  height: 64px;
+  width: 100%;
+  border-bottom: 1px var(--border-color) solid;
+  background-color: var(--background-first);
+  transition: 300ms background-color, 300ms border-bottom;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}

@@ -300,30 +300,32 @@ class ChatManager:
             return required
 
         for param, config in parameters.items():
+            # Skip non-dict configs
             if not isinstance(config, dict):
                 logging.warning(
                     f"Skipping param '{param}': invalid config type {type(config)}. Value: {config}"
                 )
                 continue
+
+            # Build the full path for nested parameters
             current_path = f"{parent_path}.{param}" if parent_path else param
 
-            # Проверяем, является ли текущий параметр обязательным
-            if config.get("required", False):
+            # Check if this parameter is required (always or conditionally)
+            is_required = config.get("required", False) or ("required_cond" in config)
+            if is_required:
                 description = config.get("description", "No description")
+                # Append conditional note if applicable
+                if "required_cond" in config:
+                    description += f" (Condition: {config['required_cond']})"
                 required.append((current_path, description))
 
-            # Рекурсивно проверяем подкомпоненты
-            if "subcomponents" in config:
-                subcomponents = config.get("subcomponents")
-                if subcomponents:
-                    if not isinstance(subcomponents, dict):
-                        logging.warning(
-                            f"Skipping subcomponents for '{param}': invalid type {type(subcomponents)}"
-                        )
-                        continue
-                sub_required = self.get_required_fields(
-                    config["subcomponents"], current_path
+            # Recurse into subcomponents if they exist
+            subcomponents = config.get("subcomponents")
+            if isinstance(subcomponents, dict):
+                required.extend(self.get_required_fields(subcomponents, current_path))
+            elif subcomponents is not None:
+                logging.warning(
+                    f"Skipping subcomponents for '{param}': invalid type {type(subcomponents)}"
                 )
-                required.extend(sub_required)
 
         return required

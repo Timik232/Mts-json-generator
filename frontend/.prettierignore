@@ -1,0 +1,10 @@
+# Ignore artifacts:
+/.next
+/node_modules
+/public
+jsconfig.json
+.gitignore
+next.config.js
+package.json
+package-lock.json
+README.md

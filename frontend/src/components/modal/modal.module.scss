@@ -1,0 +1,39 @@
+.ModalOverlay
+{
+  z-index: 100;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 8.5vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ModalContent {
+  z-index: 101;
+  max-width: calc(100vw - 17vw);
+  max-height: calc(100vh - 17vw);
+  min-width: 17vw;
+  min-height: 17vw;
+  background-color: var(--background-modal);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 16px;
+  color: var(--text-first);
+  padding: 16px;
+  transition: 300ms background-color, 300ms border, 300ms color;
+  > h3
+  {
+    color: var(--text-first);
+    font-weight: 600;
+    font-size: 18px;
+  }
+}
